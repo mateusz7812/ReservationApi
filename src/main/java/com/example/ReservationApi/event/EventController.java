@@ -22,12 +22,12 @@ public class EventController {
 
     @GetMapping
     public List<Event> getEvents(){
-        return null;
+        return eventRepository.findAll();
     }
 
     @PostMapping
     public void addEvent(@RequestBody Event event){
-
+        eventRepository.save(event);
     }
 
     @GetMapping("/{id}")

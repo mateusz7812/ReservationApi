@@ -5,6 +5,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Entity
@@ -14,7 +15,7 @@ public class Event {
     @GeneratedValue
     private UUID id;
 
-    @NotBlank
+    @NotNull
     private UUID accountId;
 
     @NotBlank

@@ -20,13 +20,7 @@ public class ReservationController {
     }
 
     @GetMapping
-    public List<Reservation> getReservationsOfAccount(@RequestParam("accountId") UUID accountId){
-
-        return null;
-    }
-
-    @GetMapping
-    public List<Reservation> getReservationsOfEvent(@RequestParam("eventId") UUID eventId){
+    public List<Reservation> getReservationsOfEvent(@RequestParam("accountId") UUID accountId, @RequestParam("eventId") UUID eventId){
 
         return null;
     }
