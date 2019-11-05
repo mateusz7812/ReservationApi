@@ -1,6 +1,5 @@
 package com.example.ReservationApi.account;
 
-import com.example.ReservationApi.authorization.AuthorizationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,12 +10,10 @@ import java.util.UUID;
 @RequestMapping("/api/account")
 public class AccountController {
     private final AccountRepository accountRepository;
-    private final AuthorizationService authorizationService;
 
     @Autowired
-    public AccountController(AccountRepository accountRepository, AuthorizationService authorizationService) {
+    public AccountController(AccountRepository accountRepository) {
         this.accountRepository = accountRepository;
-        this.authorizationService = authorizationService;
     }
 
     @GetMapping
@@ -26,7 +23,7 @@ public class AccountController {
 
     @PostMapping
     public void addAccount(@RequestBody Account account){
-
+        accountRepository.save(account);
     }
 
     @GetMapping("/{id}")

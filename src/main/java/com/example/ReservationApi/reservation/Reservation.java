@@ -1,9 +1,10 @@
 package com.example.ReservationApi.reservation;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import com.example.ReservationApi.account.Account;
+import com.example.ReservationApi.event.Event;
+import com.example.ReservationApi.space.Place;
+
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
@@ -15,27 +16,29 @@ public class Reservation {
     @GeneratedValue
     private UUID id;
 
-    @NotNull
-    private UUID eventID;
+    @ManyToOne
+    @JoinColumn(name = "place_id")
+    private Place place;
+
+    @ManyToOne
+    @JoinColumn(name = "account_id")
+    private Account account;
+
+    @ManyToOne
+    @JoinColumn(name = "event_id")
+    private Event event;
 
     public Reservation(){
         super();
     }
 
-    public Reservation(UUID id, @NotNull UUID eventID){
+    public Reservation(UUID id, @NotNull Event event, Place place){
         super();
         this.id = id;
-        this.eventID = eventID;
+        this.event = event;
+        this.place = place;
     }
 
-
-    public UUID getEventID() {
-        return eventID;
-    }
-
-    public void setEventID(UUID eventID) {
-        this.eventID = eventID;
-    }
 
     public UUID getId() {
         return id;
@@ -43,5 +46,17 @@ public class Reservation {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public Event getEvent() {
+        return event;
+    }
+
+    public Account getAccount() {
+        return account;
+    }
+
+    public Place getPlace() {
+        return place;
     }
 }

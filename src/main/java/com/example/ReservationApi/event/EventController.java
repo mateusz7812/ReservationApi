@@ -1,6 +1,5 @@
 package com.example.ReservationApi.event;
 
-import com.example.ReservationApi.authorization.AuthorizationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,12 +11,10 @@ import java.util.UUID;
 public class EventController {
 
     private final EventRepository eventRepository;
-    private final AuthorizationService authorizationService;
 
     @Autowired
-    public EventController(EventRepository eventRepository, AuthorizationService authorizationService) {
+    public EventController(EventRepository eventRepository) {
         this.eventRepository = eventRepository;
-        this.authorizationService = authorizationService;
     }
 
     @GetMapping

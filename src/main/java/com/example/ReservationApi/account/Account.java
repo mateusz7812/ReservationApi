@@ -1,10 +1,13 @@
 package com.example.ReservationApi.account;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import com.example.ReservationApi.event.Event;
+import com.example.ReservationApi.reservation.Reservation;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -15,16 +18,35 @@ public class Account {
     private UUID id;
 
     @NotBlank
+    @JsonProperty("login")
     private String login;
 
-    public Account(){
+    @NotBlank
+    @JsonProperty("password")
+    private String password;
+
+    @OneToMany(mappedBy = "account")
+    private List<Event> events;
+
+    @OneToMany(mappedBy = "account")
+    private List<Reservation> reservations;
+
+    public Account(String login, String password){
         super();
+        this.login = login;
+        this.password = password;
     }
 
-    public Account (UUID id, String login){
+    public Account(UUID id, String login, String password){
         super();
         this.id = id;
         this.login = login;
+        this.password = password;
+        this.events = new ArrayList<>();
+    }
+
+    public Account() {
+        super();
     }
 
     public String getLogin() {
@@ -41,5 +63,17 @@ public class Account {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public List<Event> getEvents() {
+        return events;
+    }
+
+    public void addEvent(Event event){
+        events.add(event);
+    }
+
+    public boolean checkPassword(String password){
+        return this.password.equals(password);
     }
 }
