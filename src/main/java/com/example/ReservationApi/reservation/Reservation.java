@@ -2,7 +2,7 @@ package com.example.ReservationApi.reservation;
 
 import com.example.ReservationApi.account.Account;
 import com.example.ReservationApi.event.Event;
-import com.example.ReservationApi.space.Place;
+import com.example.ReservationApi.reservable.Reservable;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -18,7 +18,7 @@ public class Reservation {
 
     @ManyToOne
     @JoinColumn(name = "place_id")
-    private Place place;
+    private Reservable reservable;
 
     @ManyToOne
     @JoinColumn(name = "account_id")
@@ -32,11 +32,11 @@ public class Reservation {
         super();
     }
 
-    public Reservation(UUID id, @NotNull Event event, Place place){
+    public Reservation(UUID id, @NotNull Event event, Reservable reservable){
         super();
         this.id = id;
         this.event = event;
-        this.place = place;
+        this.reservable = reservable;
     }
 
 
@@ -56,7 +56,7 @@ public class Reservation {
         return account;
     }
 
-    public Place getPlace() {
-        return place;
+    public Reservable getReservable() {
+        return reservable;
     }
 }

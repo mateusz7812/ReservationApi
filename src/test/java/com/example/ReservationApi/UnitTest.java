@@ -2,15 +2,14 @@ package com.example.ReservationApi;
 
 import com.example.ReservationApi.account.Account;
 import com.example.ReservationApi.account.AccountRepository;
-import com.example.ReservationApi.event.Event;
 import com.example.ReservationApi.event.EventRepository;
-import com.example.ReservationApi.reservation.Reservation;
+import com.example.ReservationApi.reservable.Reservable;
+import com.example.ReservationApi.reservable.ReservableRepository;
 import com.example.ReservationApi.reservation.ReservationRepository;
-import com.example.ReservationApi.space.Seat;
-import com.example.ReservationApi.space.SeatRepository;
-import com.example.ReservationApi.space.Space;
-import com.example.ReservationApi.space.SpaceRepository;
+import com.example.ReservationApi.reservable.types.Seat;
+import org.json.JSONException;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.UUID;
+import java.util.List;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -32,16 +31,18 @@ public class UnitTest {
     AccountRepository accountRepository;
 
     @Autowired
-    SpaceRepository spaceRepository;
-
-    @Autowired
-    SeatRepository seatRepository;
-
-    @Autowired
     EventRepository eventRepository;
 
     @Autowired
     ReservationRepository reservationRepository;
+
+    @Autowired
+    private ReservableRepository reservableRepository;
+
+    @Before
+    public void before(){
+        TestMethods.setTestRestTemplate(testRestTemplate);
+    }
 
     @Test
     public void testAuthorization(){
@@ -57,28 +58,30 @@ public class UnitTest {
     }
 
     @Test
-    public void testMakeReservation(){
-        Account account = new Account("login", "password");
-        accountRepository.save(account);
+    public void addAccountTest() throws JSONException {
+        TestMethods.addAccount("user", "password");
 
-        Space space = new Space();
-        spaceRepository.save(space);
+        List<Account> accounts = accountRepository.findAll();
+        Assert.assertEquals(1, accounts.size());
+        Account account = accounts.get(0);
+        Assert.assertEquals("user", account.getLogin());
+        Assert.assertTrue(account.checkPassword("password"));
+    }
 
-        for(int i=0; i<10; i++){
-            seatRepository.save(new Seat(space));
-        }
+    @Test
+    public void inheritedEntityRepositoryTest(){
+        reservableRepository.save(new Seat("A1"));
+        Assert.assertEquals(1, reservableRepository.findAll().size());
+        Assert.assertEquals(Seat.class, reservableRepository.findAll().get(0).getClass());
+    }
 
-        Event event = new Event(UUID.randomUUID(), account, space, "event");
-        eventRepository.save(event);
-        event = eventRepository.findAll().get(0);
+    @Test
+    public void addSeatTest() throws JSONException {
+        TestMethods.addAccount("user", "password");
+        TestMethods.addOneSeat("user", "password");
 
-        Assert.assertEquals(10, event.getFreeSeats().length);
-
-        Reservation reservation = new Reservation(UUID.randomUUID(), event, event.getFreeSeats()[0]);
-        reservationRepository.save(reservation);
-
-        event = eventRepository.findAll().get(0);
-        Assert.assertEquals(9, event.getFreeSeats().length);
-
+        Assert.assertEquals(1, reservableRepository.findAll().size());
+        Reservable reservable = reservableRepository.findAll().get(0);
+        Assert.assertEquals(Seat.class, reservable.getClass());
     }
 }

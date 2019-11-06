@@ -1,35 +1,27 @@
-package com.example.ReservationApi.space;
+package com.example.ReservationApi.reservable;
 
 import com.example.ReservationApi.event.Event;
 import com.example.ReservationApi.reservation.Reservation;
 
 import javax.persistence.*;
-import javax.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
-@Table(name="places")
-public class Place {
+@Table(name="reservable")
+public class Reservable {
 
-    @OneToMany(mappedBy = "place", fetch=FetchType.EAGER)
+    @OneToMany(mappedBy = "reservable", fetch=FetchType.EAGER)
     private List<Reservation> reservations;
 
     @Id
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "space_id")
-    private Space space;
 
-    public Place(Space space) {
-        this.space = space;
-    }
-
-    public Space getSpace() {
-        return space;
+    public Reservable() {
+        super();
     }
 
     public List<Reservation> getReservations() {

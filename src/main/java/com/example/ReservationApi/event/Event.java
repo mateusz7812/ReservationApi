@@ -2,8 +2,7 @@ package com.example.ReservationApi.event;
 
 import com.example.ReservationApi.account.Account;
 import com.example.ReservationApi.reservation.Reservation;
-import com.example.ReservationApi.space.Place;
-import com.example.ReservationApi.space.Space;
+import com.example.ReservationApi.reservable.types.Space;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
@@ -79,7 +78,4 @@ public class Event {
         return reservations;
     }
 
-    public Place[] getFreeSeats() {
-        return space.getFreePlaces(this);
-    }
 }

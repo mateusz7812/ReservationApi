@@ -1,7 +1,13 @@
 package com.example.ReservationApi.reservation;
 
+import com.example.ReservationApi.reservable.Reservable;
+import com.example.ReservationApi.reservable.ReservableRepository;
+import com.example.ReservationApi.reservable.types.Seat;
+import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import org.json.JSONObject;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,7 +24,6 @@ public class ReservationController {
 
     @PostMapping
     public void addReservation(@RequestBody Reservation reservation){
-
     }
 
     @DeleteMapping("/{id}")

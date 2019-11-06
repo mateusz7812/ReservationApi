@@ -32,21 +32,19 @@ public class Account {
     private List<Reservation> reservations;
 
     public Account(String login, String password){
-        super();
+        this();
         this.login = login;
         this.password = password;
     }
 
     public Account(UUID id, String login, String password){
-        super();
+        this(login, password);
         this.id = id;
-        this.login = login;
-        this.password = password;
-        this.events = new ArrayList<>();
     }
 
     public Account() {
         super();
+        this.events = new ArrayList<>();
     }
 
     public String getLogin() {

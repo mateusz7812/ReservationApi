@@ -18,7 +18,7 @@ public class AccountController {
 
     @GetMapping
     public List<Account> allAccounts(){
-        return null;
+        return accountRepository.findAll();
     }
 
     @PostMapping
