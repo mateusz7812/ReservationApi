@@ -2,11 +2,13 @@ package com.example.ReservationApi;
 
 import com.example.ReservationApi.account.Account;
 import com.example.ReservationApi.account.AccountRepository;
+import com.example.ReservationApi.event.Event;
 import com.example.ReservationApi.event.EventRepository;
 import com.example.ReservationApi.reservable.Reservable;
 import com.example.ReservationApi.reservable.ReservableRepository;
 import com.example.ReservationApi.reservation.ReservationRepository;
 import com.example.ReservationApi.reservable.types.Seat;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.json.JSONException;
 import org.junit.Assert;
 import org.junit.Before;
@@ -39,13 +41,23 @@ public class UnitTest {
     @Autowired
     private ReservableRepository reservableRepository;
 
+    private Account account = new Account("user", "password");
+    private String password = "password";
+
+    private TestMethods testMethods;
+
+
     @Before
     public void before(){
-        TestMethods.setTestRestTemplate(testRestTemplate);
+        testMethods = new TestMethods(account.getLogin(), password, testRestTemplate);
+        reservationRepository.deleteAll();
+        reservableRepository.deleteAll();
+        eventRepository.deleteAll();
+        accountRepository.deleteAll();
     }
 
     @Test
-    public void testAuthorization(){
+    public void authorization(){
         ResponseEntity<String> notAuthorizedGetAccountsResponse = testRestTemplate.withBasicAuth("user", "password").getForEntity("/api/account", String.class);
         Assert.assertEquals(401, notAuthorizedGetAccountsResponse.getStatusCodeValue());
 
@@ -58,8 +70,8 @@ public class UnitTest {
     }
 
     @Test
-    public void addAccountTest() throws JSONException {
-        TestMethods.addAccount("user", "password");
+    public void addAccount() throws JSONException {
+        testMethods.addAccount(account, password);
 
         List<Account> accounts = accountRepository.findAll();
         Assert.assertEquals(1, accounts.size());
@@ -69,19 +81,46 @@ public class UnitTest {
     }
 
     @Test
-    public void inheritedEntityRepositoryTest(){
+    public void inheritedEntityRepository(){
         reservableRepository.save(new Seat("A1"));
         Assert.assertEquals(1, reservableRepository.findAll().size());
         Assert.assertEquals(Seat.class, reservableRepository.findAll().get(0).getClass());
     }
 
     @Test
-    public void addSeatTest() throws JSONException {
-        TestMethods.addAccount("user", "password");
-        TestMethods.addOneSeat("user", "password");
+    public void addSeat() throws JSONException {
+        testMethods.addAccount(account, password);
+        testMethods.addOneSeat(new Seat("name"));
 
         Assert.assertEquals(1, reservableRepository.findAll().size());
         Reservable reservable = reservableRepository.findAll().get(0);
         Assert.assertEquals(Seat.class, reservable.getClass());
+        Assert.assertEquals("name", ((Seat) reservable).getName());
+    }
+
+    @Test
+    public void getAllReservableObjects() throws JSONException, JsonProcessingException {
+        testMethods.addAccount(account, password);
+        testMethods.addOneSeat(new Seat("name"));
+
+        Reservable[] allReservableObjects = testMethods.getAllReservableObjects();
+
+        Seat expected = (Seat) reservableRepository.findAll().get(0);
+        Seat actual = (Seat) allReservableObjects[0];
+        Assert.assertEquals(1, allReservableObjects.length);
+        Assert.assertEquals(expected.getId(), actual.getId());
+        Assert.assertEquals(expected.getName(), actual.getName());
+    }
+
+    @Test
+    public void addEvent() throws JSONException {
+        testMethods.addAccount(account, password);
+        Account account = accountRepository.findAll().get(0);
+        testMethods.addEvent(new Event(account, "event"));
+
+        Assert.assertEquals(1, eventRepository.findAll().size());
+        Event event = eventRepository.findAll().get(0);
+        Assert.assertEquals("event", event.getName());
+        Assert.assertEquals(account.getId(), event.getAccount().getId());
     }
 }

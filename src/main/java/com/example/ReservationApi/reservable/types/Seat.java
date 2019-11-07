@@ -20,4 +20,7 @@ public class Seat extends Reservable {
     }
 
 
+    public String getName() {
+        return name;
+    }
 }

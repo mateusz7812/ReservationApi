@@ -21,29 +21,25 @@ public class Event {
     @NotBlank
     private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "space_id")
-    private Space space;
-
-    @OneToMany(mappedBy = "event")
-    private List<Reservation> reservations;
-
-    @ManyToOne
-    @JoinColumn(name = "account_id")
-    private Account account;
+    //@ManyToOne @JoinColumn(name = "space_id") private Space space;
+    //@OneToMany(mappedBy = "event") private List<Reservation> reservations;
+    @ManyToOne @JoinColumn(name = "account_id") private Account account;
 
     public Event(){
         super();
     }
 
-    public Event(UUID id, Account account, Space space, String name){
-        super();
+    public Event(Account account, String name){
+        this.name = name;
+        this.account = account;
+    }
+
+    public Event(UUID id, Account account, String name){
+        this(account, name);
 
         this.id = id;
-        this.account = account;
-        this.space = space;
-        this.name = name;
-        this.reservations = new ArrayList<>();
+        //this.space = space;
+        //this.reservations = new ArrayList<>();
     }
 
     public UUID getId() {
@@ -58,9 +54,9 @@ public class Event {
         return account;
     }
 
-    public void setAccount(Account account) {
-        this.account = account;
-    }
+    //public void setAccount(Account account) {
+    //    this.account = account;
+    //}
 
     public String getName() {
         return name;
@@ -70,12 +66,12 @@ public class Event {
         this.name = name;
     }
 
-    public Space getSpace() {
-        return space;
-    }
+    //public Space getSpace() {
+    //    return space;
+    //}
 
-    public List<Reservation> getReservations() {
-        return reservations;
-    }
+    //public List<Reservation> getReservations() {
+    //    return reservations;
+    //}
 
 }

@@ -16,17 +16,9 @@ public class Reservation {
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "place_id")
-    private Reservable reservable;
-
-    @ManyToOne
-    @JoinColumn(name = "account_id")
-    private Account account;
-
-    @ManyToOne
-    @JoinColumn(name = "event_id")
-    private Event event;
+    //@ManyToOne @JoinColumn(name = "place_id") private Reservable reservable;
+    //@ManyToOne @JoinColumn(name = "account_id") private Account account;
+    //@ManyToOne @JoinColumn(name = "event_id") private Event event;
 
     public Reservation(){
         super();
@@ -35,8 +27,8 @@ public class Reservation {
     public Reservation(UUID id, @NotNull Event event, Reservable reservable){
         super();
         this.id = id;
-        this.event = event;
-        this.reservable = reservable;
+        //this.event = event;
+        //this.reservable = reservable;
     }
 
 
@@ -48,15 +40,15 @@ public class Reservation {
         this.id = id;
     }
 
-    public Event getEvent() {
-        return event;
-    }
+    //public Event getEvent() {
+    //    return event;
+    //}
 
-    public Account getAccount() {
-        return account;
-    }
+    //public Account getAccount() {
+    //    return account;
+    //}
 
-    public Reservable getReservable() {
-        return reservable;
-    }
+    //public Reservable getReservable() {
+    //    return reservable;
+    //}
 }

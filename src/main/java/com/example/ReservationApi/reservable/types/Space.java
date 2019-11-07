@@ -14,11 +14,11 @@ import java.util.UUID;
 public class Space {
     @Id @GeneratedValue private UUID id;
     @NotNull private String name;
-    @OneToMany(mappedBy = "space") private List<Event> events;
+    //@OneToMany(mappedBy = "space") private List<Event> events;
 
     public Space(){
         super();
-        events = new ArrayList<>();
+        //events = new ArrayList<>();
     }
 
     public Space(String name){
@@ -31,9 +31,9 @@ public class Space {
         this.id = id;
     }
 
-    public List<Event> getEvents() {
-        return events;
-    }
+    //public List<Event> getEvents() {
+    //    return events;
+    //}
 
     public UUID getId() {
         return id;

@@ -2,22 +2,22 @@ package com.example.ReservationApi;
 
 import com.example.ReservationApi.account.Account;
 import com.example.ReservationApi.event.Event;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.example.ReservationApi.reservable.Reservable;
+import com.example.ReservationApi.reservable.types.Seat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,13 +31,18 @@ class FunctionalTest {
 	private TestRestTemplate testRestTemplate;
 
 	@Test
-	void basicApiTest() throws JSONException, JsonProcessingException {
+	void basicApiTest() throws JSONException, IOException {
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 
+		Account account = new Account("user", "password");
+		String password = "password";
+
+		TestMethods testMethods = new TestMethods(account.getLogin(), password, testRestTemplate);
+
 		//add a account
-		TestMethods.setTestRestTemplate(testRestTemplate);
-		TestMethods.addAccount("user", "password");
+		testMethods.addAccount(account, password);
 
 		//get all accounts
 		ResponseEntity<String> getAccountsResponse = testRestTemplate.withBasicAuth("user", "password").getForEntity("/api/account", String.class);
@@ -47,18 +52,19 @@ class FunctionalTest {
 
 		UUID accountId = accountsArray[0].getId();
 
-		//add one seat to the space
-		TestMethods.addOneSeat("user", "password");
+		//add one seat
+		testMethods.addOneSeat(new Seat("seat"));
+
+		//get all reservable objects
+		Reservable[] reservableObjectsArray = testMethods.getAllReservableObjects();
+		Assert.assertEquals(1, reservableObjectsArray.length);
+		Seat seat = (Seat) reservableObjectsArray[0];
+		Assert.assertEquals("seat", seat.getName());
 
 		//add a event
-		JSONObject eventJsonObject = new JSONObject();
-		eventJsonObject.put("name", "myEvent");
-		eventJsonObject.put("account", accountId);
-
-		HttpEntity<String> addEventRequest = new HttpEntity<>(eventJsonObject.toString(), headers);
-		ResponseEntity<String> addEventResponse = testRestTemplate.withBasicAuth("user", "password").postForEntity("/api/event", addEventRequest, String.class);
-		Assert.assertEquals(200, addEventResponse.getStatusCode().value());
-
+		account.setId(accountId);
+		testMethods.addEvent(new Event(account, "event"));
+/*
 		//get all events
 		ResponseEntity<String> getEventsResponse = testRestTemplate.withBasicAuth("user", "password").getForEntity("/api/event", String.class);
 		Assert.assertEquals(200, getEventsResponse.getStatusCode().value());
@@ -76,7 +82,7 @@ class FunctionalTest {
 		//Assert.assertEquals( 10, createdEvent.getFreeSeats());
 
 
-
+*/
 	}
 
 }
