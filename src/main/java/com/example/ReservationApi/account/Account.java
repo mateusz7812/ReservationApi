@@ -25,8 +25,8 @@ public class Account {
     @JsonProperty("password")
     private String password;
 
-    @OneToMany(mappedBy = "account") private List<Event> events;
-    //@OneToMany(mappedBy = "account") private List<Reservation> reservations;
+    @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE) private List<Event> events;
+    @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE) private List<Reservation> reservations;
 
     public Account(String login, String password){
         this();
@@ -42,6 +42,12 @@ public class Account {
     Account() {
         super();
         this.events = new ArrayList<>();
+        this.reservations = new ArrayList<>();
+    }
+
+    public Account(UUID id) {
+        this();
+        this.id = id;
     }
 
     public String getLogin() {
@@ -70,5 +76,9 @@ public class Account {
 
     public boolean checkPassword(String password){
         return this.password.equals(password);
+    }
+
+    public List<Reservation> getReservations() {
+        return reservations;
     }
 }

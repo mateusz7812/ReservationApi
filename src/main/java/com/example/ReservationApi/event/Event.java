@@ -1,6 +1,7 @@
 package com.example.ReservationApi.event;
 
 import com.example.ReservationApi.account.Account;
+import com.example.ReservationApi.reservable.Reservable;
 import com.example.ReservationApi.reservation.Reservation;
 import com.example.ReservationApi.reservable.types.Space;
 
@@ -14,49 +15,40 @@ import java.util.UUID;
 @Inheritance(strategy = InheritanceType.JOINED)
 @Table(name="events")
 public class Event {
-    @Id
-    @GeneratedValue
-    private UUID id;
+    @Id @GeneratedValue private UUID id;
 
-    @NotBlank
-    private String name;
+    @NotBlank private String name;
 
-    //@ManyToOne @JoinColumn(name = "space_id") private Space space;
-    //@OneToMany(mappedBy = "event") private List<Reservation> reservations;
+    @ManyToOne @JoinColumn(name = "reservable_id") private Reservable reservable;
+
+    @OneToMany(mappedBy = "event", fetch=FetchType.EAGER, cascade = CascadeType.REMOVE) private List<Reservation> reservations;
     @ManyToOne @JoinColumn(name = "account_id") private Account account;
 
     public Event(){
         super();
     }
 
-    public Event(Account account, String name){
-        this.name = name;
+
+    public Event(Account account, Reservable reservable, String name) {
+        this();
         this.account = account;
+        this.reservable = reservable;
+        this.name = name;
     }
 
-    public Event(UUID id, Account account, String name){
-        this(account, name);
-
+    public Event(UUID id, Account account, Reservable reservable, String name) {
+        this(account, reservable, name);
         this.id = id;
-        //this.space = space;
-        //this.reservations = new ArrayList<>();
     }
+
 
     public UUID getId() {
         return id;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
     public Account getAccount() {
         return account;
     }
-
-    //public void setAccount(Account account) {
-    //    this.account = account;
-    //}
 
     public String getName() {
         return name;
@@ -66,12 +58,11 @@ public class Event {
         this.name = name;
     }
 
-    //public Space getSpace() {
-    //    return space;
-    //}
+    public void setAccount(Account account) {
+        this.account = account;
+    }
 
-    //public List<Reservation> getReservations() {
-    //    return reservations;
-    //}
-
+    public Reservable getReservable() {
+        return reservable;
+    }
 }

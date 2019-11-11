@@ -4,6 +4,7 @@ import com.example.ReservationApi.account.Account;
 import com.example.ReservationApi.event.Event;
 import com.example.ReservationApi.reservable.Reservable;
 import com.example.ReservationApi.reservable.types.Seat;
+import com.example.ReservationApi.reservation.Reservation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONException;
 import org.junit.Assert;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -32,9 +34,6 @@ class FunctionalTest {
 
 	@Test
 	void basicApiTest() throws JSONException, IOException {
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
 
 		Account account = new Account("user", "password");
 		String password = "password";
@@ -63,26 +62,26 @@ class FunctionalTest {
 
 		//add a event
 		account.setId(accountId);
-		testMethods.addEvent(new Event(account, "event"));
-/*
+		testMethods.addEvent(new Event(account, seat, "event"));
+
 		//get all events
-		ResponseEntity<String> getEventsResponse = testRestTemplate.withBasicAuth("user", "password").getForEntity("/api/event", String.class);
-		Assert.assertEquals(200, getEventsResponse.getStatusCode().value());
-		Event[] events = mapper.readValue(Objects.requireNonNull(getEventsResponse.getBody()), Event[].class);
+		Event[] events = testMethods.getAllEvents();
 		Assert.assertEquals( 1 , events.length);
 
 		//get event created before
 		UUID eventId = events[0].getId();
-		ResponseEntity<String> getCreatedEventResponse = testRestTemplate.withBasicAuth("user", "password").getForEntity("/api/account/" + eventId, String.class);
-		Assert.assertEquals(200, getCreatedEventResponse.getStatusCodeValue());
+		Event event = testMethods.getEventWithId(eventId.toString());
+		Assert.assertEquals( eventId, event.getId());
+		Assert.assertEquals( "event", event.getName());
 
-		Event createdEvent = mapper.readValue(Objects.requireNonNull(getEventsResponse.getBody()), Event.class);
-		Assert.assertEquals( eventId, createdEvent.getId());
-		Assert.assertEquals( "myEvent", createdEvent.getName());
-		//Assert.assertEquals( 10, createdEvent.getFreeSeats());
+		//add reservation
+		testMethods.addReservation(account, event, seat);
 
+		//check reservation
+		account = testMethods.getAccount(accountId);
+		List<Reservation> reservations = account.getReservations();
+		Assert.assertEquals(1, reservations.size());
 
-*/
 	}
 
 }
