@@ -53,7 +53,7 @@ public class EventService {
     }
 
     public Event findById(UUID id) {
-        return eventRepository.findById(id).orElseThrow();
+        return eventRepository.findById(id).orElse(null);
     }
 
     public void delete(Event event) {

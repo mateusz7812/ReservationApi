@@ -16,6 +16,7 @@ import javax.persistence.*;
 import java.util.UUID;
 
 @Entity
+@EntityListeners(ReservationListener.class)
 @Table(name = "reservations")
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, resolver = IdDeserializer.class, property = "id", scope = Reservation.class)
 public class Reservation {
