@@ -235,6 +235,7 @@ public class UnitTest {
 
         ResponseEntity<String> response = testMethods.editAccount(account1.getId(), account1);
 
+        Assert.assertEquals(200, response.getStatusCodeValue());
         Account updatedAccount = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Account.class);
         Assert.assertEquals(account1.getLogin(), updatedAccount.getLogin());
     }
@@ -249,6 +250,7 @@ public class UnitTest {
         account1 = objectMapper.readValue(account1Json.toString(), Account.class);
         ResponseEntity<String> response = testMethods.editAccount(oldId, account1);
 
+        Assert.assertEquals(400, response.getStatusCodeValue());
         Assert.assertNull(response.getBody());
         List<Account> all = accountRepository.findAll();
         Assert.assertEquals(1, accountRepository.findAll().size());
@@ -262,6 +264,7 @@ public class UnitTest {
 
         ResponseEntity<String> response = testMethods.addReservable(space);
 
+        Assert.assertEquals(200, response.getStatusCodeValue());
         Space addedSpace = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Space.class);
         Assert.assertEquals(space.getName(), addedSpace.getName());
         reservableRepository.findOne(Example.of(new Space("space"))).orElseThrow();
@@ -274,6 +277,7 @@ public class UnitTest {
 
         ResponseEntity<String> response = testMethods.addReservable(new Seat("name", space));
 
+        Assert.assertEquals(200, response.getStatusCodeValue());
         Seat seat = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Seat.class);
         Assert.assertEquals("name", seat.getName());
         Assert.assertEquals(seat.getSpace().getId(), space.getId());
@@ -358,6 +362,7 @@ public class UnitTest {
 
         ResponseEntity<String> response = testMethods.addEvent(new Event(reservable, "event"));
 
+        Assert.assertEquals(200, response.getStatusCodeValue());
         Event addedEvent = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Event.class);
         List<Event> allEvents = eventRepository.findAll();
         Assert.assertEquals(1, allEvents.size());

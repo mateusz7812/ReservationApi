@@ -44,17 +44,17 @@ class TestMethods {
     }
 
     ResponseEntity<String> getAccount(UUID id) throws JsonProcessingException {
-        return testRestTemplate.getForEntity("/api/account/" + id, String.class);
+        return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/account/" + id, String.class);
     }
 
     ResponseEntity<String> getAllAccounts() throws JsonProcessingException {
-        return testRestTemplate.getForEntity("/api/account", String.class);
+        return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/account", String.class);
     }
 
     public ResponseEntity<String> editAccount(UUID id, Account account) throws JsonProcessingException {
         String accountJson = mapper.writeValueAsString(account);
         HttpEntity<String> accountAddRequest = new HttpEntity<>(accountJson, headers);
-        return testRestTemplate.exchange("/api/account/" + id, HttpMethod.PUT, accountAddRequest, String.class);
+        return testRestTemplate.withBasicAuth(username, password).exchange("/api/account/" + id, HttpMethod.PUT, accountAddRequest, String.class);
     }
 
     ResponseEntity<String> addReservable(Reservable reservable) throws JsonProcessingException {

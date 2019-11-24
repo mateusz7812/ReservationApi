@@ -1,5 +1,6 @@
-package com.example.reservationApi.observation;
+package com.example.reservationApi.config;
 
+import com.example.reservationApi.observation.SocketHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;

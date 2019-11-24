@@ -5,10 +5,13 @@ import com.example.reservationApi.event.Event;
 import com.example.reservationApi.json.IdDeserializer;
 import com.example.reservationApi.json.ReservableDeserializer;
 import com.example.reservationApi.json.ReservableSerializer;
+import com.example.reservationApi.observation.ObservationService;
 import com.example.reservationApi.reservable.Reservable;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -16,7 +19,6 @@ import javax.persistence.*;
 import java.util.UUID;
 
 @Entity
-@EntityListeners(ReservationListener.class)
 @Table(name = "reservations")
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, resolver = IdDeserializer.class, property = "id", scope = Reservation.class)
 public class Reservation {
@@ -42,6 +44,21 @@ public class Reservation {
         this.event = event;
         this.reservable = reservable;
         this.account = account;
+    }
+
+    @PostRemove
+    @PostPersist
+    @PostUpdate
+    private void updateObservers() {
+        ObjectMapper mapper = new ObjectMapper();
+        UUID eventId = this.getEvent().getId();
+        String data = null;
+        try {
+            data = mapper.writeValueAsString(this.reservable);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        ObservationService.updateAllObserversByObserverdId(eventId, data);
     }
 
     public UUID getId() {

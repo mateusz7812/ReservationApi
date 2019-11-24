@@ -43,4 +43,8 @@ public class AccountService {
     public Account update(Account account){
         return accountRepository.save(account);
     }
+
+    public Account getByUsername(String username){
+        return accountRepository.findOne(Example.of(new Account(username, null))).orElseThrow();
+    }
 }

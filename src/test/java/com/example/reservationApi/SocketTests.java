@@ -9,8 +9,7 @@ import com.example.reservationApi.reservable.ReservableRepository;
 import com.example.reservationApi.reservable.types.Seat;
 import com.example.reservationApi.reservation.Reservation;
 import com.example.reservationApi.reservation.ReservationRepository;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +35,8 @@ public class SocketTests {
     private int port;
     private String URL;
 
+    private ObjectMapper mapper = new ObjectMapper();
+
     @Autowired
     EventRepository eventRepository;
 
@@ -48,7 +49,7 @@ public class SocketTests {
     @Autowired
     ReservationRepository reservationRepository;
 
-    private CompletableFuture<JSONObject> completableFuture;
+    private CompletableFuture<Reservable> completableFuture;
 
     @Before
     public void setup() {
@@ -62,42 +63,32 @@ public class SocketTests {
         Reservable reservable = reservableRepository.save(new Seat("seat1"));
         Event event = eventRepository.save(new Event(reservable, "event1"));
         String uuid = String.valueOf(event.getId());
-
         StandardWebSocketClient client = new StandardWebSocketClient();
         client.doHandshake(new TestWebSocketHandler(), new WebSocketHttpHeaders(), URI.create(URL + uuid)).get(10, SECONDS);
+        Reservation reservation = reservationRepository.save(new Reservation(account, event, reservable));
 
-        reservationRepository.save(new Reservation(account, event, reservable));
+        Reservable reservableFromWebSocket = completableFuture.get(10, SECONDS);
 
-        JSONObject data = completableFuture.get(10, SECONDS);
-
-        try {
-            Assert.assertEquals("event1", data.get("name"));
-        } catch (JSONException e) {
-            Assert.fail();
-        }
+        Assert.assertEquals(reservable.getId(), reservableFromWebSocket.getId());
+        Assert.assertEquals(reservation.getReservable().getId(), reservableFromWebSocket.getId());
     }
 
     class TestWebSocketHandler implements WebSocketHandler{
         @Override
-        public void afterConnectionEstablished(WebSocketSession webSocketSession) {
-
-        }
+        public void afterConnectionEstablished(WebSocketSession webSocketSession) { }
 
         @Override
         public void handleMessage(WebSocketSession webSocketSession, WebSocketMessage<?> webSocketMessage) throws Exception {
             Object payload = webSocketMessage.getPayload();
-            completableFuture.complete(new JSONObject(String.valueOf(payload)));
+            Reservable reservable = mapper.readValue(String.valueOf(payload), Reservable.class);
+            completableFuture.complete(reservable);
         }
 
         @Override
-        public void handleTransportError(WebSocketSession webSocketSession, Throwable throwable) {
-
-        }
+        public void handleTransportError(WebSocketSession webSocketSession, Throwable throwable) { }
 
         @Override
-        public void afterConnectionClosed(WebSocketSession webSocketSession, CloseStatus closeStatus) {
-
-        }
+        public void afterConnectionClosed(WebSocketSession webSocketSession, CloseStatus closeStatus) { }
 
         @Override
         public boolean supportsPartialMessages() {

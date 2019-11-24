@@ -1,5 +1,6 @@
-package com.example.reservationApi.security;
+package com.example.reservationApi.config;
 
+import com.example.reservationApi.authentication.PasswordAuthenticationProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,10 +13,10 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    private final UsernamePasswordAuthenticationProvider authProvider;
+    private final PasswordAuthenticationProvider authProvider;
 
     @Autowired
-    public SecurityConfig(UsernamePasswordAuthenticationProvider authProvider) {
+    public SecurityConfig(PasswordAuthenticationProvider authProvider) {
         this.authProvider = authProvider;
     }
 
@@ -28,9 +29,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
-                .antMatchers(HttpMethod.POST, "/account").permitAll()
-                .antMatchers(HttpMethod.GET, "/event").authenticated()
-                .antMatchers(HttpMethod.POST, "/event").authenticated()
+                .mvcMatchers(HttpMethod.POST,"/api/account/**").permitAll()
+                .anyRequest().hasAuthority("ROLE_USER")
                 .and().httpBasic().and().csrf().disable().cors();
     }
 

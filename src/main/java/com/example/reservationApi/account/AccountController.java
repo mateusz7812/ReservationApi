@@ -3,6 +3,7 @@ package com.example.reservationApi.account;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,10 +33,13 @@ public class AccountController {
     }
 
     @PutMapping("/{id}")
-    public Account modifyAccountWithId(@PathVariable UUID id, @RequestBody Account account){
+    public Account modifyAccountWithId(@PathVariable UUID id, @RequestBody Account account, HttpServletResponse response){
         if(id.equals(account.getId()))
             return accountService.update(account);
-        return null;
+        else{
+            response.setStatus(400);
+            return null;
+        }
     }
 
 
