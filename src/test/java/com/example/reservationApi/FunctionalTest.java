@@ -1,6 +1,8 @@
 package com.example.reservationApi;
 
 import com.example.reservationApi.account.Account;
+import com.example.reservationApi.admin.Admin;
+import com.example.reservationApi.admin.AdminService;
 import com.example.reservationApi.event.Event;
 import com.example.reservationApi.reservable.Reservable;
 import com.example.reservationApi.reservable.types.Seat;
@@ -29,30 +31,35 @@ class FunctionalTest {
 	private ObjectMapper mapper = new ObjectMapper();
 
 	@Autowired
+	private AdminService adminService;
+
+	@Autowired
 	private TestRestTemplate testRestTemplate;
 
 	@Test
-	void oneUserApiTest() throws IOException {
-
-		Account account = new Account("user", "password");
-		String password = "password";
-
-		TestMethods testMethods = new TestMethods(account.getLogin(), password, testRestTemplate);
+	void basicApiTest() throws IOException {
+		TestMethods testMethods = new TestMethods(testRestTemplate);
 
 		//add a account
+		Account adminAccount = new Account("admin", "admin");
+		ResponseEntity<String> addAdminAccountResponse = testMethods.addAccount(adminAccount);
+		adminAccount = mapper.readValue(Objects.requireNonNull(addAdminAccountResponse.getBody()), Account.class);
+		adminService.save(new Admin(adminAccount));
+
+		Account account = new Account("user", "password");
 		ResponseEntity<String> addAccountResponse = testMethods.addAccount(account);
 		account = mapper.readValue(Objects.requireNonNull(addAccountResponse.getBody()), Account.class);
 
 		//add one seat
-		ResponseEntity<String> addSeatResponse = testMethods.addReservable(new Seat("seat"));
+		ResponseEntity<String> addSeatResponse = testMethods.setPass("admin", "admin").addReservable(new Seat("seat"));
 		Seat seat = mapper.readValue(Objects.requireNonNull(addSeatResponse.getBody()), Seat.class);
 
 		//add a event
-		ResponseEntity<String> getEventResponse = testMethods.addEvent(new Event(seat, "event"));
+		ResponseEntity<String> getEventResponse = testMethods.setPass("admin", "admin").addEvent(new Event(seat, "event"));
 		Event event = mapper.readValue(Objects.requireNonNull(getEventResponse.getBody()), Event.class);
 
 		//add reservation
-		testMethods.addReservation(new Reservation(account, event, seat));
+		testMethods.setPass("user", "password").addReservation(new Reservation(account, event, seat));
 
 		//check reservation
 		ResponseEntity<String> getAccountResponse = testMethods.getAccount(account.getId());
@@ -64,15 +71,25 @@ class FunctionalTest {
 		Assert.assertEquals(event.getId(), reservation.getEvent().getId());
 		Assert.assertEquals(seat.getId(), reservation.getReservable().getId());
 
+		//delete all
+		testMethods.deleteReservation(reservation.getId());
+		testMethods.setPass("admin", "admin").deleteEvent(event.getId());
+		testMethods.deleteReservable(seat.getId());
+		testMethods.deleteAccount(adminAccount.getId());
 	}
 
 	@Test
-	void moreUsersApiTest() throws JsonProcessingException {
+	void advancedApiTest() throws JsonProcessingException {
 		TestMethods testMethods = new TestMethods(testRestTemplate);
 
 		//add accounts
+		Account adminAccount = new Account("admin", "admin");
 		Account user1 = new Account("user", "password");
 		Account user2 = new Account("user2", "password");
+
+		ResponseEntity<String> addAdminAccountResponse = testMethods.addAccount(adminAccount);
+		adminAccount = mapper.readValue(Objects.requireNonNull(addAdminAccountResponse.getBody()), Account.class);
+		adminService.save(new Admin(adminAccount));
 
 		ResponseEntity<String> addUser1Response = testMethods.addAccount(user1);
 		user1 = mapper.readValue(Objects.requireNonNull(addUser1Response.getBody()), Account.class);
@@ -82,15 +99,15 @@ class FunctionalTest {
 
 		//edit account
 		user1.setLogin("user1");
-		ResponseEntity<String> updateUser1Response = testMethods.editAccount(user1.getId(), user1);
+		ResponseEntity<String> updateUser1Response = testMethods.setPass("user", "password").editAccount(user1.getId(), user1);
 		user1 = mapper.readValue(Objects.requireNonNull(updateUser1Response.getBody()), Account.class);
 
 		user2.setPassword("other");
-		ResponseEntity<String> updateUser2Response = testMethods.editAccount(user2.getId(), user2);
+		ResponseEntity<String> updateUser2Response = testMethods.setPass("user2", "password").editAccount(user2.getId(), user2);
 		user2 = mapper.readValue(Objects.requireNonNull(updateUser2Response.getBody()), Account.class);
 
 		//add reservable objects
-		ResponseEntity<String> addSpace1Response = testMethods.addReservable(new Space("space1"));
+		ResponseEntity<String> addSpace1Response = testMethods.setPass("admin", "admin").addReservable(new Space("space1"));
 		Space space1 = mapper.readValue(Objects.requireNonNull(addSpace1Response.getBody()), Space.class);
 
 		ResponseEntity<String> addSpace2Response = testMethods.addReservable(new Space("space2"));
@@ -115,7 +132,7 @@ class FunctionalTest {
 		List<Reservable> reservables = mapper.readValue(Objects.requireNonNull(response.getBody()), new TypeReference<>() {});
 
 		//add events
-		ResponseEntity<String> addEvent1Response = testMethods.addEvent(new Event(space1, "event1", 1200, 1450));
+		ResponseEntity<String> addEvent1Response = testMethods.setPass("admin", "admin").addEvent(new Event(space1, "event1", 1200, 1450));
 		Event event1 = mapper.readValue(Objects.requireNonNull(addEvent1Response.getBody()), Event.class);
 
 		ResponseEntity<String> addEvent2Response = testMethods.addEvent(new Event(space2, "event2", 1300, 1400));
@@ -126,7 +143,7 @@ class FunctionalTest {
 
 		//add reservation
 		Reservation reservation1 = new Reservation(user1, event3, reservables.get(7));
-		testMethods.addReservation(reservation1);
+		testMethods.setPass("user1", "password").addReservation(reservation1);
 
 		Reservation reservation2 = new Reservation(user1, event3, reservables.get(12));
 		testMethods.addReservation(reservation2);
@@ -142,17 +159,32 @@ class FunctionalTest {
 
 		//edit reservation
 		reservation1.setReservable(reservables.get(8));
-		testMethods.editReservation(reservation1.getId(), reservation1);
+		testMethods.setPass("user1", "password").editReservation(reservation1.getId(), reservation1);
+
+		//delete reservations
+		testMethods.deleteReservation(reservation1.getId());
+		testMethods.deleteReservation(reservation2.getId());
+		testMethods.setPass("user2", "other").deleteReservation(reservation3.getId());
+		testMethods.deleteReservation(reservation4.getId());
 
 		//edit event
 		event1.setReservable(space3);
-		testMethods.editEvent(event1.getId(), event1);
+		testMethods.setPass("admin", "admin").editEvent(event1.getId(), event1);
 
 		//delete reservable
-		testMethods.deleteReservable(space1.getId());
+		for (Reservable reservable :
+				reservables) {
+			testMethods.deleteReservable(reservable.getId());
+		}
 
 		//delete event
+		testMethods.deleteEvent(event1.getId());
 		testMethods.deleteEvent(event2.getId());
+		testMethods.deleteEvent(event3.getId());
 
+		//delete accounts
+		testMethods.deleteAccount(user2.getId());
+		testMethods.deleteAccount(user1.getId());
+		testMethods.deleteAccount(adminAccount.getId());
 	}
 }

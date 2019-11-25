@@ -1,5 +1,6 @@
 package com.example.reservationApi.account;
 
+import com.example.reservationApi.admin.Admin;
 import com.example.reservationApi.json.IdDeserializer;
 import com.example.reservationApi.reservation.Reservation;
 import com.fasterxml.jackson.annotation.*;
@@ -19,15 +20,21 @@ public class Account {
     private UUID id;
 
     @NotBlank
+    @Column(unique = true)
     @JsonProperty("login")
     private String login;
+
+    @JsonIgnore
+    @OneToOne(mappedBy = "account", cascade = CascadeType.REMOVE)
+    private Admin admin;
 
     @NotBlank
     @JsonProperty("password")
     private String password;
 
     @JsonIdentityReference(alwaysAsId = true)
-    @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER) private List<Reservation> reservations;
+    @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
+    private List<Reservation> reservations;
 
     public Account(String login, String password){
         this();
@@ -37,7 +44,13 @@ public class Account {
 
     Account() {
         super();
+        admin = null;
         this.reservations = new ArrayList<>();
+    }
+
+    @JsonIgnore
+    public boolean isAdmin(){
+        return admin != null;
     }
 
     public String getLogin() {

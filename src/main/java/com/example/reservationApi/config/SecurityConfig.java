@@ -30,7 +30,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
                 .mvcMatchers(HttpMethod.POST,"/api/account/**").permitAll()
-                .anyRequest().hasAuthority("ROLE_USER")
+                .mvcMatchers(HttpMethod.DELETE,"/api/account/**").hasRole("ADMIN")
+                .mvcMatchers("/api/admin/**").hasRole("ADMIN")
+                .mvcMatchers(HttpMethod.GET, "/api/event/**").hasRole("USER")
+                .mvcMatchers("/api/event/**").hasRole("ADMIN")
+                .mvcMatchers(HttpMethod.GET, "/api/reservable/**").hasRole("USER")
+                .mvcMatchers("/api/reservable/**").hasRole("ADMIN")
+                .anyRequest().hasRole("USER")
                 .and().httpBasic().and().csrf().disable().cors();
     }
 

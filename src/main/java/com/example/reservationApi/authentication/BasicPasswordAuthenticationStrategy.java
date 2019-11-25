@@ -47,13 +47,17 @@ public class BasicPasswordAuthenticationStrategy implements PasswordAuthenticati
 
     @Override
     public List<GrantedAuthority> getAuthorities(Account account) {
-        return new ArrayList<>(){{
-            add(new SimpleGrantedAuthority("ROLE_USER"));}};
+        ArrayList<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+        if(account.isAdmin()){
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+        return authorities;
     }
 
     @Override
     public Account getAccount(Object pass) {
-        return accountService.getByUsername(((Pass) pass).username);
+        return accountService.findByLogin(((Pass) pass).username);
     }
 
     @Override

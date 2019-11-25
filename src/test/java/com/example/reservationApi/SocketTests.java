@@ -22,6 +22,7 @@ import org.springframework.web.socket.*;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 
 import java.net.URI;
+import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -64,7 +65,11 @@ public class SocketTests {
         Event event = eventRepository.save(new Event(reservable, "event1"));
         String uuid = String.valueOf(event.getId());
         StandardWebSocketClient client = new StandardWebSocketClient();
-        client.doHandshake(new TestWebSocketHandler(), new WebSocketHttpHeaders(), URI.create(URL + uuid)).get(10, SECONDS);
+        String plainCredentials="login" + ":" + "password";
+        String base64Credentials = Base64.getEncoder().encodeToString(plainCredentials.getBytes());
+        WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
+        headers.add("Authorization", "Basic " + base64Credentials);
+        client.doHandshake(new TestWebSocketHandler(), headers, URI.create(URL + uuid)).get(10, SECONDS);
         Reservation reservation = reservationRepository.save(new Reservation(account, event, reservable));
 
         Reservable reservableFromWebSocket = completableFuture.get(10, SECONDS);

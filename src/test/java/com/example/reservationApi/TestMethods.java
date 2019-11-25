@@ -1,6 +1,7 @@
 package com.example.reservationApi;
 
 import com.example.reservationApi.account.Account;
+import com.example.reservationApi.admin.Admin;
 import com.example.reservationApi.event.Event;
 import com.example.reservationApi.reservable.Reservable;
 import com.example.reservationApi.reservation.Reservation;
@@ -28,7 +29,7 @@ class TestMethods {
     }
 
     TestMethods(TestRestTemplate testRestTemplate) {
-        this(null, null, testRestTemplate);
+        this("user", "password", testRestTemplate);
     }
 
     TestMethods setPass(String username, String password) {
@@ -121,5 +122,15 @@ class TestMethods {
         HttpEntity<String> editReservationResquest = new HttpEntity<>(reservationJson, headers);
         return testRestTemplate.withBasicAuth(username, password).exchange("/api/reservation/" + id, HttpMethod.PUT, editReservationResquest, String.class);
 
+    }
+
+    public ResponseEntity<String> addAdmin(Admin admin) throws JsonProcessingException {
+        String adminJsonObject = mapper.writeValueAsString(admin);
+        HttpEntity<String> addAdminRequest = new HttpEntity<>(adminJsonObject, headers);
+        return testRestTemplate.withBasicAuth(username, password).postForEntity("/api/admin", addAdminRequest, String.class);
+    }
+
+    public ResponseEntity<String> deleteAccount(UUID id) {
+        return testRestTemplate.withBasicAuth(username, password).exchange("/api/account/" + id, HttpMethod.DELETE, null, String.class);
     }
 }

@@ -74,7 +74,14 @@ public abstract class Reservable{
     public abstract boolean contains(Reservable reservable);
 
     public boolean takenForEvent(UUID eventId) {
-        return getReservations().stream().map(Reservation::getEvent).map(Event::getId).filter(eventId1 -> eventId1.equals(eventId)).toArray().length != 0;
+        boolean reservationIsTaken = getReservations().stream().map(Reservation::getEvent).map(Event::getId).filter(eventId1 -> eventId1.equals(eventId)).toArray().length != 0;
+        if (!reservationIsTaken){
+            if(space != null)
+                return space.takenForEvent(eventId);
+            else
+                return false;
+        }
+        return true;
     }
 
 }

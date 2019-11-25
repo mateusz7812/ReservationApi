@@ -1,7 +1,6 @@
 package com.example.reservationApi.account;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,8 +34,8 @@ public class AccountService {
         return accountRepository.findById(id).orElseThrow();
     }
 
-    public boolean checkPassword(String name, String password) {
-        List<Account> accounts = accountRepository.findAll(Example.of(new Account(name, password)));
+    public boolean checkPassword(String login, String password) {
+        List<Account> accounts = accountRepository.findByLoginAndPassword(login, password);
         return !accounts.isEmpty();
     }
 
@@ -44,7 +43,11 @@ public class AccountService {
         return accountRepository.save(account);
     }
 
-    public Account getByUsername(String username){
-        return accountRepository.findOne(Example.of(new Account(username, null))).orElseThrow();
+    public Account findByLogin(String login){
+        return accountRepository.findByLogin(login);
+    }
+
+    public void delete(Account account) {
+        accountRepository.delete(account);
     }
 }
