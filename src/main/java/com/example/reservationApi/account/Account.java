@@ -29,7 +29,6 @@ public class Account {
     private Admin admin;
 
     @NotBlank
-    @JsonProperty("password")
     private String password;
 
     @JsonIdentityReference(alwaysAsId = true)

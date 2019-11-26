@@ -4,7 +4,10 @@ import com.example.reservationApi.event.Event;
 import com.example.reservationApi.json.IdDeserializer;
 import com.example.reservationApi.reservable.types.Space;
 import com.example.reservationApi.reservation.Reservation;
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
@@ -25,7 +28,7 @@ public abstract class Reservable{
 
     @JsonIdentityReference(alwaysAsId = true)
     @Fetch(FetchMode.SELECT)
-    @OneToMany(mappedBy = "reservable", fetch=FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "reservable", fetch=FetchType.EAGER)
     protected List<Event> events = new ArrayList<>();
 
     @JsonIdentityReference(alwaysAsId = true)
@@ -84,5 +87,12 @@ public abstract class Reservable{
         return true;
     }
 
+    public boolean inAnyEvent() {
+        boolean thisInEvent = getEvents().size() != 0;
+        boolean spaceInEvent = false;
+        if (space != null)
+            spaceInEvent = space.inAnyEvent();
+        return  thisInEvent || spaceInEvent;
+    }
 }
 

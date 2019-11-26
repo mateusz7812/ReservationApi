@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,7 +24,16 @@ public class AccountController {
     }
 
     @PostMapping
-    public Account addAccount(@RequestBody Account account){
+    public Account addAccount(@RequestBody Account account, HttpServletResponse response){
+        if(!accountService.loginFree(account.getLogin()))
+        {
+            try {
+                response.sendError(400, "login is taken");
+            } catch (IOException e) {
+                response.setStatus(400);
+            }
+            return null;
+        }
         return accountService.save(account);
     }
 
@@ -33,11 +43,15 @@ public class AccountController {
     }
 
     @PutMapping("/{id}")
-    public Account modifyAccountWithId(@PathVariable UUID id, @RequestBody Account account, HttpServletResponse response){
+    public Account updateAccount(@PathVariable UUID id, @RequestBody Account account, HttpServletResponse response){
         if(id.equals(account.getId()))
             return accountService.update(account);
         else{
-            response.setStatus(400);
+            try {
+                response.sendError(400, "id is unchangable");
+            } catch (IOException e) {
+                response.setStatus(400);
+            }
             return null;
         }
     }

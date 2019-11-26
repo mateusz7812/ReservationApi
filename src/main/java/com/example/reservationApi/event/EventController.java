@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,13 +26,15 @@ public class EventController {
 
     @PostMapping
     public Event addEvent(@RequestBody Event event, HttpServletResponse response){
-        if (eventService.valid(event)) {
-            return eventService.save(event);
-        } else {
-            response.setStatus(400);
+        if (eventService.reservableIsInOtherEventThen(event)) {
+            try {
+                response.sendError(400, "reservable is in other event then");
+            } catch (IOException e) {
+                response.setStatus(400);
+            }
             return null;
         }
-
+        return eventService.save(event);
     }
 
     @GetMapping("/{id}")
@@ -41,12 +44,16 @@ public class EventController {
 
     @PutMapping("/{id}")
     public Event editEventWithId(@PathVariable UUID id, @RequestBody Event event, HttpServletResponse response){
-        if(id.equals(event.getId()))
-            return eventService.update(event);
-        else{
-            response.setStatus(400);
+        if (!id.equals(event.getId())) {
+            try {
+                response.sendError(400, "id is unchangable");
+            } catch (IOException e) {
+                response.setStatus(400);
+            }
             return null;
         }
+        return eventService.update(event);
+
     }
 
     @DeleteMapping("/{id}")

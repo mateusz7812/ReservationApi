@@ -20,12 +20,10 @@ public class AccountService {
     }
 
     public Account save(Account account) {
-        if(loginFree(account.getLogin()))
-            return accountRepository.save(account);
-        return null;
+        return accountRepository.save(account);
     }
 
-    private boolean loginFree(String login) {
+    public boolean loginFree(String login) {
         Object[] sameLoginAccounts = findAll().stream().filter(account -> account.getLogin().equals(login)).toArray();
         return sameLoginAccounts.length == 0;
     }

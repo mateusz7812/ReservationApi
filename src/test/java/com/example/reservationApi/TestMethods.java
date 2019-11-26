@@ -19,17 +19,11 @@ class TestMethods {
     private String password;
     private HttpHeaders headers;
 
-    TestMethods(String username, String password, TestRestTemplate testRestTemplate){
+    TestMethods(TestRestTemplate testRestTemplate){
         this.testRestTemplate = testRestTemplate;
-        this.username = username;
-        this.password = password;
 
         headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-    }
-
-    TestMethods(TestRestTemplate testRestTemplate) {
-        this("user", "password", testRestTemplate);
     }
 
     TestMethods setPass(String username, String password) {
@@ -44,11 +38,11 @@ class TestMethods {
         return testRestTemplate.postForEntity("/api/account", accountAddRequest, String.class);
     }
 
-    ResponseEntity<String> getAccount(UUID id) throws JsonProcessingException {
+    ResponseEntity<String> getAccount(UUID id) {
         return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/account/" + id, String.class);
     }
 
-    ResponseEntity<String> getAllAccounts() throws JsonProcessingException {
+    ResponseEntity<String> getAllAccounts() {
         return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/account", String.class);
     }
 
@@ -78,7 +72,7 @@ class TestMethods {
         return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/event", String.class);
     }
 
-    ResponseEntity<String> getEventWithId(String eventId) throws JsonProcessingException {
+    ResponseEntity<String> getEventWithId(String eventId) {
         return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/event/" + eventId, String.class);
     }
 
@@ -107,7 +101,7 @@ class TestMethods {
         return testRestTemplate.withBasicAuth(username, password).exchange("/api/event/" + id, HttpMethod.DELETE, null, String.class);
     }
 
-    public ResponseEntity<String> getReservableById(UUID id) throws JsonProcessingException {
+    public ResponseEntity<String> getReservableById(UUID id) {
         return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/reservable/" + id, String.class);
     }
 

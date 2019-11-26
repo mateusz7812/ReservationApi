@@ -24,7 +24,7 @@ public class Admin {
         this.account = account;
     }
 
-    public Admin(){};
+    public Admin(){}
 
     public Account getAccount(){
         return account;

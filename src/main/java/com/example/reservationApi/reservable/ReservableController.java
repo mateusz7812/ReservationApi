@@ -1,8 +1,10 @@
 package com.example.reservationApi.reservable;
 
+import com.example.reservationApi.reservable.types.Space;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,14 +37,35 @@ public class ReservableController {
         if(id.equals(reservable.getId()))
             return reservableService.update(reservable);
         else{
-            response.setStatus(400);
+            try {
+                response.sendError(400, "id is unchangable");
+            } catch (IOException e) {
+                response.setStatus(400);
+            }
             return null;
         }
     }
 
     @DeleteMapping("/{id}")
-    public void deleteReservable(@PathVariable UUID id){
+    public void deleteReservable(@PathVariable UUID id, HttpServletResponse response){
         Reservable reservable = reservableService.findById(id);
+        if (reservable.inAnyEvent()) {
+            try {
+                response.sendError(400, "reservable in event");
+            } catch (IOException e) {
+                response.setStatus(400);
+            }
+            return;
+        }
+        if(reservable instanceof Space)
+            if(((Space) reservable).getReservables().size() != 0) {
+                try {
+                    response.sendError(400, "space cointains reservable");
+                } catch (IOException e) {
+                    response.setStatus(400);
+                }
+                return;
+            }
         reservableService.delete(reservable);
     }
 }

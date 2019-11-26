@@ -29,18 +29,11 @@ public class EventService {
         return eventRepository.save(event);
     }
 
-    boolean valid(Event event) {
-        if (reservableIsInOtherEventThen(event)) return false;
-        return true;
-    }
-
-    private boolean reservableIsInOtherEventThen(Event event) {
+    public boolean reservableIsInOtherEventThen(Event event) {
         Reservable reservable = reservableService.findById(event.getReservable().getId());
         List<Event> events = reservable.getEvents();
         List<Event> inCollision = events.stream().filter(event1 -> inCollision(event1, event)).collect(Collectors.toList());
-        if (!inCollision.isEmpty())
-            return true;
-        return false;
+        return !inCollision.isEmpty();
     }
 
     private boolean inCollision(Event event1, Event event2) {

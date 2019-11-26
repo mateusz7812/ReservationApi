@@ -17,7 +17,8 @@ import java.util.List;
 public class Space extends Reservable{
     @JsonDeserialize(using = ReservableDeserializer.class)
     @JsonIdentityReference(alwaysAsId = true)
-    @OneToMany(mappedBy = "space", fetch = FetchType.EAGER) private List<Reservable> reservables  = new ArrayList<>();
+    @OneToMany(mappedBy = "space", fetch = FetchType.EAGER)
+    private List<Reservable> reservables  = new ArrayList<>();
 
     public Space(){
         this("Space");
