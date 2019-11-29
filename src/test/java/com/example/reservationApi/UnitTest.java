@@ -152,12 +152,26 @@ public class UnitTest {
     @Test
     public void editAccountByOtherAccount() throws JsonProcessingException {
         Account account = accountService.save(new Account("user", "password"));
-        Account other = accountService.save(new Account("user2", "password2"));
+        accountService.save(new Account("user2", "password2"));
         account.setLogin("newLogin");
 
         ResponseEntity<String> response = testMethods.setPass("user2", "password2").editAccount(account.getId(), account);
 
         Assert.assertEquals(403, response.getStatusCodeValue());
+        Assert.assertNotEquals("newLogin", accountService.findById(account.getId()).getLogin());
+    }
+
+    @Test
+    public void editAccountByAdmin() throws JsonProcessingException {
+        Account account = accountService.save(new Account("user", "password"));
+        Account other = accountService.save(new Account("user2", "password2"));
+        adminService.save(new Admin(other));
+        account.setLogin("newLogin");
+
+        ResponseEntity<String> response = testMethods.setPass("user2", "password2").editAccount(account.getId(), account);
+
+        Assert.assertEquals(200, response.getStatusCodeValue());
+        Assert.assertEquals("newLogin", accountService.findById(account.getId()).getLogin());
     }
 
     @Test
@@ -184,7 +198,7 @@ public class UnitTest {
         adminService.save((new Admin(account)));
         Reservable reservable = reservableService.save(new Seat("seat1"));
         Event event = eventService.save(new Event(reservable, "Event1"));
-        Reservation reservation = reservationService.save(new Reservation(account, event, reservable));
+        reservationService.save(new Reservation(account, event, reservable));
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").deleteAccount(account.getId());
 
@@ -344,7 +358,7 @@ public class UnitTest {
         Account account = accountService.save(new Account("user", "password"));
         adminService.save(new Admin(account));
         Space space = (Space) reservableService.save(new Space("space"));
-        Seat seat = (Seat) reservableService.save(new Seat("seat1", space));
+        reservableService.save(new Seat("seat1", space));
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").deleteReservable(space.getId());
 
@@ -361,7 +375,7 @@ public class UnitTest {
         Account account = accountService.save(new Account("user", "password"));
         adminService.save(new Admin(account));
         Space space = (Space) reservableService.save(new Space("space"));
-        Event event = eventService.save(new Event(space, "event1"));
+        eventService.save(new Event(space, "event1"));
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").deleteReservable(space.getId());
 
@@ -379,7 +393,7 @@ public class UnitTest {
         adminService.save(new Admin(account));
         Space space = (Space) reservableService.save(new Space("space"));
         Seat seat = (Seat) reservableService.save(new Seat("seat1", space));
-        Event event = eventService.save(new Event(space, "event1"));
+        eventService.save(new Event(space, "event1"));
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").deleteReservable(seat.getId());
 

@@ -1,5 +1,7 @@
 package com.example.reservationApi.config;
 
+import com.example.reservationApi.account.AccountFilter;
+import com.example.reservationApi.account.AccountService;
 import com.example.reservationApi.authentication.PasswordAuthenticationProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -13,10 +15,13 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+    private final AccountService accountService;
+
     private final PasswordAuthenticationProvider authProvider;
 
     @Autowired
-    public SecurityConfig(PasswordAuthenticationProvider authProvider) {
+    public SecurityConfig(AccountService accountService, PasswordAuthenticationProvider authProvider) {
+        this.accountService = accountService;
         this.authProvider = authProvider;
     }
 
@@ -28,6 +33,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+        http.addFilter(new AccountFilter(accountService));
+
         http.authorizeRequests()
                 .mvcMatchers(HttpMethod.POST,"/api/account/**").permitAll()
                 .mvcMatchers(HttpMethod.DELETE,"/api/account/**").hasRole("ADMIN")
