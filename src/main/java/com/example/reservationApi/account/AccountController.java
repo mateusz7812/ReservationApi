@@ -44,9 +44,7 @@ public class AccountController {
 
     @PutMapping("/{id}")
     public Account updateAccount(@PathVariable UUID id, @RequestBody Account account, HttpServletResponse response){
-        if(id.equals(account.getId()))
-            return accountService.update(account);
-        else{
+        if (!id.equals(account.getId())) {
             try {
                 response.sendError(400, "id is unchangable");
             } catch (IOException e) {
@@ -54,6 +52,8 @@ public class AccountController {
             }
             return null;
         }
+        return accountService.update(account);
+
     }
 
     @DeleteMapping("/{id}")
