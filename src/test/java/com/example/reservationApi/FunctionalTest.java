@@ -1,9 +1,8 @@
 package com.example.reservationApi;
 
 import com.example.reservationApi.account.Account;
-import com.example.reservationApi.admin.Admin;
-import com.example.reservationApi.admin.AdminService;
 import com.example.reservationApi.event.Event;
+import com.example.reservationApi.json.ConfiguredMapper;
 import com.example.reservationApi.reservable.Reservable;
 import com.example.reservationApi.reservable.types.Seat;
 import com.example.reservationApi.reservable.types.Space;
@@ -11,6 +10,7 @@ import com.example.reservationApi.reservation.Reservation;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONException;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -19,13 +19,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @RunWith(SpringRunner.class)
+@ActiveProfiles("test")
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class FunctionalTest {
@@ -33,20 +34,18 @@ class FunctionalTest {
 	private ObjectMapper mapper = new ObjectMapper();
 
 	@Autowired
-	private AdminService adminService;
-
-	@Autowired
 	private TestRestTemplate testRestTemplate;
 
 	@Test
-	void basicApiTest() throws IOException {
+	void basicApiTest() throws IOException, JSONException {
 		TestMethods testMethods = new TestMethods(testRestTemplate);
 
 		//add a account
-		Account adminAccount = new Account("admin", "admin");
+		Account adminAccount = new Account("admin", "admin", new ArrayList<>() {{
+			add("ROLE_ADMIN");
+		}});
 		ResponseEntity<String> addAdminAccountResponse = testMethods.addAccount(adminAccount);
 		adminAccount = mapper.readValue(Objects.requireNonNull(addAdminAccountResponse.getBody()), Account.class);
-		adminService.save(new Admin(adminAccount));
 
 		Account account = new Account("user", "password");
 		ResponseEntity<String> addAccountResponse = testMethods.addAccount(account);
@@ -81,17 +80,18 @@ class FunctionalTest {
 	}
 
 	@Test
-	void advancedApiTest() throws JsonProcessingException {
+	void advancedApiTest() throws JsonProcessingException, JSONException {
 		TestMethods testMethods = new TestMethods(testRestTemplate);
 
 		//add accounts
-		Account adminAccount = new Account("admin", "admin");
+		Account adminAccount = new Account("admin", "admin", new ArrayList<>() {{
+			add("ROLE_ADMIN");
+		}});
 		Account user1 = new Account("user", "password");
 		Account user2 = new Account("user2", "password");
 
 		ResponseEntity<String> addAdminAccountResponse = testMethods.addAccount(adminAccount);
 		adminAccount = mapper.readValue(Objects.requireNonNull(addAdminAccountResponse.getBody()), Account.class);
-		adminService.save(new Admin(adminAccount));
 
 		ResponseEntity<String> addUser1Response = testMethods.addAccount(user1);
 		user1 = mapper.readValue(Objects.requireNonNull(addUser1Response.getBody()), Account.class);
@@ -100,12 +100,14 @@ class FunctionalTest {
 		user2 = mapper.readValue(Objects.requireNonNull(addUser2Response.getBody()), Account.class);
 
 		//edit account
-		user1.setLogin("user1");
-		ResponseEntity<String> updateUser1Response = testMethods.setPass("user", "password").editAccount(user1.getId(), user1);
+		HashMap<String, Object> user1Map = new HashMap<>();
+		user1Map.put("login", "user1");
+		ResponseEntity<String> updateUser1Response = testMethods.setPass("user", "password").editAccount(user1.getId(), user1Map);
 		user1 = mapper.readValue(Objects.requireNonNull(updateUser1Response.getBody()), Account.class);
 
-		user2.setPassword("other");
-		ResponseEntity<String> updateUser2Response = testMethods.setPass("user2", "password").editAccount(user2.getId(), user2);
+		HashMap<String, Object> user2Map = new HashMap<>();
+		user2Map.put("password", "other");
+		ResponseEntity<String> updateUser2Response = testMethods.setPass("user2", "password").editAccount(user2.getId(), user2Map);
 		user2 = mapper.readValue(Objects.requireNonNull(updateUser2Response.getBody()), Account.class);
 
 		//add reservable objects
@@ -160,8 +162,9 @@ class FunctionalTest {
 		testMethods.deleteReservation(reservation3.getId());
 
 		//edit reservation
-		reservation1.setReservable(reservables.get(8));
-		testMethods.setPass("user1", "password").editReservation(reservation1.getId(), reservation1);
+		HashMap<String, Object> updateReservationMap = new HashMap<>();
+		updateReservationMap.put("reservable", reservables.get(8).getId());
+		testMethods.setPass("user1", "password").editReservation(reservation1.getId(), updateReservationMap);
 
 		//delete reservations
 		testMethods.deleteReservation(reservation1.getId());
@@ -170,8 +173,11 @@ class FunctionalTest {
 		testMethods.deleteReservation(reservation4.getId());
 
 		//edit event
-		event1.setReservable(space3);
-		testMethods.setPass("admin", "admin").editEvent(event1.getId(), event1);
+		HashMap<String, Object> updateEventMap = new HashMap<>();
+		ConfiguredMapper configuredMapper = new ConfiguredMapper();
+		Map<String, Object> reservableMap = configuredMapper.convertValue(space3, new TypeReference<>() {});
+		updateEventMap.put("reservable", reservableMap);
+		testMethods.setPass("admin", "admin").editEvent(event1.getId(), updateEventMap);
 
 		//delete reservable
 		for (Reservable reservable :

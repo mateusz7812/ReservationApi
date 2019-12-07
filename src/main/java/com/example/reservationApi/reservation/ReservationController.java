@@ -1,10 +1,17 @@
 package com.example.reservationApi.reservation;
 
+import com.example.reservationApi.json.ReservableDeserializer;
+import com.example.reservationApi.json.ReservableSerializer;
+import com.example.reservationApi.reservable.Reservable;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.UUID;
 
 @RestController
@@ -45,17 +52,24 @@ public class ReservationController {
     }
 
     @PutMapping("/{id}")
-    public Reservation updateReservation(@PathVariable UUID id, @RequestBody Reservation reservation, HttpServletResponse response){
-        //if (isValid(reservation, response)) return null;
+    public Reservation updateReservation(@PathVariable UUID id, @RequestBody HashMap<String, Object> updateMap, HttpServletResponse response){
 
-        if (!id.equals(reservation.getId())) {
+        if (updateMap.containsKey("id")) {
             try {
                 response.sendError(400, "id is unchangable");
             } catch (IOException e) {
                 response.setStatus(400);
             }
         }
-        return reservationService.update(reservation);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        Reservation reservation = reservationService.findById(id);
+        HashMap<String, Object> reservationMap = mapper.convertValue(reservation, new TypeReference<>() {});
+        reservationMap.putAll(updateMap);
+        Reservation updatedReservation = mapper.convertValue(reservationMap, Reservation.class);
+
+        return reservationService.update(updatedReservation);
     }
 
     @DeleteMapping("/{id}")

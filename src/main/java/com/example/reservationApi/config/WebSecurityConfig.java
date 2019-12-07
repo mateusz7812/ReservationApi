@@ -1,28 +1,29 @@
 package com.example.reservationApi.config;
 
-import com.example.reservationApi.account.AccountFilter;
-import com.example.reservationApi.account.AccountService;
-import com.example.reservationApi.authentication.PasswordAuthenticationProvider;
+import com.example.reservationApi.authentication.AuthenticationProviderImpl;
+import com.example.reservationApi.authentication.TokenRequestFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@Order(1)
 @EnableWebSecurity
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    private final AuthenticationProviderImpl authProvider;
+    private final TokenRequestFilter tokenRequestFilter;
 
-    private final AccountService accountService;
-
-    private final PasswordAuthenticationProvider authProvider;
 
     @Autowired
-    public SecurityConfig(AccountService accountService, PasswordAuthenticationProvider authProvider) {
-        this.accountService = accountService;
+    public WebSecurityConfig(AuthenticationProviderImpl authProvider, TokenRequestFilter tokenRequestFilter) {
         this.authProvider = authProvider;
+        this.tokenRequestFilter = tokenRequestFilter;
     }
 
     @Override
@@ -30,11 +31,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         auth.authenticationProvider(authProvider);
     }
 
-
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.addFilter(new AccountFilter(accountService));
-
         http.authorizeRequests()
                 .mvcMatchers(HttpMethod.POST,"/api/account/**").permitAll()
                 .mvcMatchers(HttpMethod.DELETE,"/api/account/**").hasRole("ADMIN")
@@ -45,6 +43,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .mvcMatchers("/api/reservable/**").hasRole("ADMIN")
                 .anyRequest().hasRole("USER")
                 .and().httpBasic().and().csrf().disable().cors();
+
+        http.addFilterBefore(tokenRequestFilter, UsernamePasswordAuthenticationFilter.class);
     }
 
 }

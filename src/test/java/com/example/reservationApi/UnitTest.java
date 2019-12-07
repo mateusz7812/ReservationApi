@@ -2,10 +2,11 @@ package com.example.reservationApi;
 
 import com.example.reservationApi.account.Account;
 import com.example.reservationApi.account.AccountService;
-import com.example.reservationApi.admin.Admin;
-import com.example.reservationApi.admin.AdminService;
+import com.example.reservationApi.authentication.Token.Token;
+import com.example.reservationApi.authentication.Token.TokenService;
 import com.example.reservationApi.event.Event;
 import com.example.reservationApi.event.EventService;
+import com.example.reservationApi.json.ConfiguredMapper;
 import com.example.reservationApi.reservable.Reservable;
 import com.example.reservationApi.reservable.ReservableService;
 import com.example.reservationApi.reservable.types.Seat;
@@ -15,6 +16,7 @@ import com.example.reservationApi.reservation.ReservationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -24,16 +26,19 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RunWith(SpringRunner.class)
+@ActiveProfiles("test")
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class UnitTest {
@@ -46,7 +51,7 @@ public class UnitTest {
     AccountService accountService;
 
     @Autowired
-    AdminService adminService;
+    TokenService tokenService;
 
     @Autowired
     EventService eventService;
@@ -61,30 +66,59 @@ public class UnitTest {
 
 
     @Before
-    public void before(){
+    public void before() {
         testMethods = new TestMethods(testRestTemplate);
-        /*reservableService.deleteAll();
-        reservationRepository.deleteAll();
-        eventRepository.deleteAll();
-        adminRepository.deleteAll();
-        accountRepository.deleteAll();*/
     }
 
     @Test
-    public void authorization(){
-        ResponseEntity<String> notAuthorizedGetAccountsResponse = testRestTemplate.withBasicAuth("user", "password").getForEntity("/api/account", String.class);
+    public void tokenAuthorization() {
+        String token = "token.token.token.tok";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        ResponseEntity<String> notAuthorizedGetAccountsResponse = testRestTemplate.exchange("/api/account", HttpMethod.GET, request, String.class);
         Assert.assertEquals(401, notAuthorizedGetAccountsResponse.getStatusCodeValue());
 
         Account account = new Account("user", "password");
         accountService.save(account);
+        tokenService.save(new Token(token, account));
 
-        ResponseEntity<String> authorizedGetAccountsResponse = testRestTemplate.withBasicAuth("user", "password").getForEntity("/api/account", String.class);
+        ResponseEntity<String> authorizedGetAccountsResponse = testRestTemplate.exchange("/api/account", HttpMethod.GET, request, String.class);
         Assert.assertEquals(200, authorizedGetAccountsResponse.getStatusCodeValue());
 
     }
 
     @Test
-    public void addAccount() throws JsonProcessingException {
+    public void loginPasswordAuthorization() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth("user", "password");
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        ResponseEntity<String> notAuthorizedGetAccountsResponse = testRestTemplate.exchange("/api/account", HttpMethod.GET, request,  String.class);
+        Assert.assertEquals(401, notAuthorizedGetAccountsResponse.getStatusCodeValue());
+
+        Account account = new Account("user", "password");
+        accountService.save(account);
+
+        ResponseEntity<String> authorizedGetAccountsResponse = testRestTemplate.exchange("/api/account", HttpMethod.GET, request,  String.class);
+        Assert.assertEquals(200, authorizedGetAccountsResponse.getStatusCodeValue());
+
+    }
+
+    @Test
+    public void generateToken() throws JsonProcessingException {
+        Account account = accountService.save(new Account("user", "password"));
+        ResponseEntity<String> response = testMethods.setPass("user", "password").generateToken();
+
+        Assert.assertEquals(200, response.getStatusCodeValue());
+        Token token = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Token.class);
+        Assert.assertEquals(21, token.getToken().length());
+        Assert.assertEquals(account.getId(), token.getAccount().getId());
+    }
+
+    @Test
+    public void addAccount() throws JsonProcessingException, JSONException {
         ResponseEntity<String> response = testMethods.addAccount(new Account("user", "password"));
 
         Account addedAccount = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Account.class);
@@ -124,51 +158,82 @@ public class UnitTest {
     }
 
     @Test
-    public void getAllAccounts() throws JsonProcessingException {
+    public void getAllAccounts() throws JsonProcessingException, JSONException {
         Account account = accountService.save(new Account("user", "password"));
         Account account2 = accountService.save(new Account("login2", "password"));
 
         ResponseEntity<String> response = testMethods.setPass("login2", "password").getAllAccounts();
 
         Assert.assertEquals(200, response.getStatusCodeValue());
-        List<Account> accounts = objectMapper.readValue(Objects.requireNonNull(response.getBody()), new TypeReference<>() {});
+        List<Account> accounts = objectMapper.readValue(Objects.requireNonNull(response.getBody()), new TypeReference<>() {
+        });
         List<UUID> uuidList = accounts.stream().map(Account::getId).collect(Collectors.toList());
         Assert.assertTrue(uuidList.contains(account.getId()));
+        Assert.assertTrue(uuidList.contains(account2.getId()));
+        JSONArray jsonAccounts = new JSONArray(response.getBody());
+        Assert.assertFalse(jsonAccounts.getJSONObject(0).has("password"));
+    }
+
+    @Test
+    public void getAccountsByLogin() throws Exception {
+        Account account = accountService.save(new Account("user", "password"));
+        Account account2 = accountService.save(new Account("login2", "password"));
+
+        Map<String, String> filters = new HashMap<>();
+        filters.put("login", "login2");
+        ResponseEntity<String> response = testMethods.setPass("login2", "password").getAllAccountsFiltered(filters);
+
+        Assert.assertEquals(200, response.getStatusCodeValue());
+        List<Account> accounts = objectMapper.readValue(Objects.requireNonNull(response.getBody()), new TypeReference<>() {
+        });
+        List<UUID> uuidList = accounts.stream().map(Account::getId).collect(Collectors.toList());
+        Assert.assertFalse(uuidList.contains(account.getId()));
         Assert.assertTrue(uuidList.contains(account2.getId()));
     }
 
     @Test
     public void editAccount() throws JsonProcessingException {
         Account account = accountService.save(new Account("user", "password"));
-        account.setLogin("newLogin");
+        HashMap<String, Object> accountMap = new HashMap<>();
+        accountMap.put("login","newLogin");
+        accountMap.put("password","newPassword");
 
-        ResponseEntity<String> response = testMethods.setPass("user", "password").editAccount(account.getId(), account);
+        ResponseEntity<String> response = testMethods.setPass("user", "password").editAccount(account.getId(), accountMap);
 
         Assert.assertEquals(200, response.getStatusCodeValue());
         Account updatedAccount = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Account.class);
-        Assert.assertEquals(account.getLogin(), updatedAccount.getLogin());
+        Assert.assertEquals("newLogin", updatedAccount.getLogin());
+        updatedAccount = accountService.findById(updatedAccount.getId());
+        Assert.assertEquals("newPassword", updatedAccount.getPassword());
     }
 
     @Test
     public void editAccountByOtherAccount() throws JsonProcessingException {
         Account account = accountService.save(new Account("user", "password"));
         accountService.save(new Account("user2", "password2"));
-        account.setLogin("newLogin");
+        HashMap<String, Object> accountMap = new HashMap<>();
+        accountMap.put("login", "newLogin");
+        accountMap.put("password","newPassword");
 
-        ResponseEntity<String> response = testMethods.setPass("user2", "password2").editAccount(account.getId(), account);
+        ResponseEntity<String> response = testMethods.setPass("user2", "password2").editAccount(account.getId(), accountMap);
 
         Assert.assertEquals(403, response.getStatusCodeValue());
-        Assert.assertNotEquals("newLogin", accountService.findById(account.getId()).getLogin());
+        account = accountService.findById(account.getId());
+        Assert.assertEquals("user", account.getLogin());
+        Assert.assertEquals("password", account.getPassword());
+
     }
 
     @Test
     public void editAccountByAdmin() throws JsonProcessingException {
         Account account = accountService.save(new Account("user", "password"));
-        Account other = accountService.save(new Account("user2", "password2"));
-        adminService.save(new Admin(other));
-        account.setLogin("newLogin");
+        Account other = accountService.save(new Account("user2", "password2", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
+        HashMap<String, Object> accountMap = new HashMap<>();
+        accountMap.put("login", "newLogin");
 
-        ResponseEntity<String> response = testMethods.setPass("user2", "password2").editAccount(account.getId(), account);
+        ResponseEntity<String> response = testMethods.setPass("user2", "password2").editAccount(account.getId(), accountMap);
 
         Assert.assertEquals(200, response.getStatusCodeValue());
         Assert.assertEquals("newLogin", accountService.findById(account.getId()).getLogin());
@@ -179,23 +244,25 @@ public class UnitTest {
         Account account = accountService.save(new Account("user", "password"));
         UUID oldId = account.getId();
         UUID newId = UUID.randomUUID();
-        JSONObject account1Json = new JSONObject(objectMapper.writeValueAsString(account));
-        account1Json.put("id", newId);
-        account = objectMapper.readValue(account1Json.toString(), Account.class);
-        ResponseEntity<String> response = testMethods.setPass("user", "password").editAccount(oldId, account);
+
+        HashMap<String, Object> accountMap = new HashMap<>();
+        accountMap.put("id", newId);
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").editAccount(oldId, accountMap);
 
         Assert.assertEquals(400, response.getStatusCodeValue());
         JSONObject jsonObject = new JSONObject(response.getBody());
         Assert.assertEquals("id is unchangable", jsonObject.get("message"));
         List<Account> all = accountService.findAll();
         Assert.assertEquals(1, accountService.findAll().size());
-        Assert.assertEquals(oldId ,all.get(0).getId());
+        Assert.assertEquals(oldId, all.get(0).getId());
     }
 
     @Test
     public void deleteAccount(){
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save((new Admin(account)));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Reservable reservable = reservableService.save(new Seat("seat1"));
         Event event = eventService.save(new Event(reservable, "Event1"));
         reservationService.save(new Reservation(account, event, reservable));
@@ -204,7 +271,6 @@ public class UnitTest {
 
         Assert.assertEquals(200, response.getStatusCodeValue());
         Assert.assertEquals(0, accountService.findAll().size());
-        Assert.assertEquals(0, adminService.findAll().size());
         Assert.assertEquals(0, reservationService.findAll().size());
         Assert.assertEquals(1, reservableService.findAll().size());
         Assert.assertEquals(1, eventService.findAll().size());
@@ -222,31 +288,10 @@ public class UnitTest {
     }
 
     @Test
-    public void addAdmin() throws JsonProcessingException {
-        Account adminAccount = accountService.save(new Account("admin", "password"));
-        adminService.save(new Admin(adminAccount));
-        Account account = accountService.save(new Account("user", "password"));
-
-        ResponseEntity<String> response = testMethods.setPass("admin", "password").addAdmin(new Admin(account));
-
-        Assert.assertEquals(200, response.getStatusCodeValue());
-        Admin secondAdmin = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Admin.class);
-        Assert.assertEquals(account.getId(), secondAdmin.getAccount().getId());
-    }
-
-    @Test
-    public void addAdminWrong() throws JsonProcessingException {
-        Account account = accountService.save(new Account("user", "password"));
-
-        ResponseEntity<String> response = testMethods.setPass("user", "password").addAdmin(new Admin(account));
-
-        Assert.assertEquals(403, response.getStatusCodeValue());
-    }
-
-    @Test
     public void addSpace() throws JsonProcessingException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Space space = new Space("space");
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").addReservable(space);
@@ -268,8 +313,9 @@ public class UnitTest {
 
     @Test
     public void addSeatWithSpace() throws JsonProcessingException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Space space = (Space) reservableService.save(new Space("space"));
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").addReservable(new Seat("name", space));
@@ -310,12 +356,14 @@ public class UnitTest {
 
     @Test
     public void editReservable() throws JsonProcessingException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Seat seat = (Seat) reservableService.save(new Seat("name"));
-        seat.setName("seat");
+        HashMap<String, Object> seatMap = new HashMap<>();
+        seatMap.put("name", "seat");
 
-        ResponseEntity<String> response = testMethods.setPass("user", "password").editReservable(seat.getId(), seat);
+        ResponseEntity<String> response = testMethods.setPass("user", "password").editReservable(seat.getId(), seatMap);
 
         Assert.assertEquals(200, response.getStatusCodeValue());
         Reservable reservable = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Reservable.class);
@@ -324,16 +372,17 @@ public class UnitTest {
 
     @Test
     public void editIdReservable() throws JsonProcessingException, JSONException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Seat seat = (Seat) reservableService.save(new Seat("name"));
         UUID oldId = seat.getId();
         UUID newId = UUID.randomUUID();
-        JSONObject seatJson = new JSONObject(objectMapper.writeValueAsString(seat));
-        seatJson.put("id", newId);
-        seat = objectMapper.readValue(seatJson.toString(), Seat.class);
 
-        ResponseEntity<String> response = testMethods.setPass("user", "password").editReservable(oldId, seat);
+        HashMap<String, Object> seatMap = new HashMap<>();
+        seatMap.put("id", newId);
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").editReservable(oldId, seatMap);
 
         Assert.assertEquals(400, response.getStatusCodeValue());
         JSONObject jsonObject = new JSONObject(response.getBody());
@@ -342,8 +391,9 @@ public class UnitTest {
 
     @Test
     public void deleteReservable(){
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Space space = (Space) reservableService.save(new Space("space"));
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").deleteReservable(space.getId());
@@ -355,8 +405,9 @@ public class UnitTest {
 
     @Test
     public void deleteSpace() throws JSONException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Space space = (Space) reservableService.save(new Space("space"));
         reservableService.save(new Seat("seat1", space));
 
@@ -372,8 +423,9 @@ public class UnitTest {
 
     @Test
     public void deleteSpaceInEvent() throws JSONException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Space space = (Space) reservableService.save(new Space("space"));
         eventService.save(new Event(space, "event1"));
 
@@ -389,8 +441,9 @@ public class UnitTest {
 
     @Test
     public void deleteSeatInSpaceInEvent() throws JSONException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Space space = (Space) reservableService.save(new Space("space"));
         Seat seat = (Seat) reservableService.save(new Seat("seat1", space));
         eventService.save(new Event(space, "event1"));
@@ -407,8 +460,9 @@ public class UnitTest {
 
     @Test
     public void addEvent() throws JsonProcessingException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Reservable reservable = reservableService.save(new Seat("name"));
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").addEvent(new Event(reservable, "event"));
@@ -436,8 +490,9 @@ public class UnitTest {
 
     @Test
     public void addTwoEventsOnSameReservbleSameTime() throws JsonProcessingException, JSONException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Reservable reservable = reservableService.save(new Seat("name"));
 
         ResponseEntity<String> response200 = testMethods.setPass("user", "password").addEvent(new Event(reservable, "event1", 200, 300));
@@ -457,8 +512,9 @@ public class UnitTest {
 
     @Test
     public void addTwoValidEvents() throws JsonProcessingException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Reservable reservable = reservableService.save(new Seat("name"));
 
         ResponseEntity<String> response1 = testMethods.setPass("user", "password").addEvent(new Event(reservable, "event1", 200, 300));
@@ -500,13 +556,16 @@ public class UnitTest {
 
     @Test
     public void editEvent() throws JsonProcessingException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Reservable reservable = reservableService.save(new Seat("name"));
         Event event = eventService.save(new Event(reservable, "event"));
-        event.setName("other");
 
-        ResponseEntity<String> response = testMethods.setPass("user", "password").editEvent(event.getId(), event);
+        HashMap<String, Object> updateMap = new HashMap<>();
+        updateMap.put("name", "other");
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").editEvent(event.getId(), updateMap);
 
         Assert.assertEquals(200, response.getStatusCodeValue());
         Event eventFromResponse = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Event.class);
@@ -515,17 +574,18 @@ public class UnitTest {
 
     @Test
     public void editEventId() throws JsonProcessingException, JSONException {
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Reservable reservable = reservableService.save(new Seat("name"));
         Event event = eventService.save(new Event(reservable, "event"));
         UUID oldId = event.getId();
         UUID newId = UUID.randomUUID();
-        JSONObject eventJson = new JSONObject(objectMapper.writeValueAsString(event));
-        eventJson.put("id", newId);
-        event = objectMapper.readValue(eventJson.toString(), Event.class);
 
-        ResponseEntity<String> response = testMethods.setPass("user", "password").editEvent(oldId, event);
+        HashMap<String, Object> updateMap = new HashMap<>();
+        updateMap.put("id", newId);
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").editEvent(oldId, updateMap);
 
         Assert.assertEquals(400, response.getStatusCodeValue());
         JSONObject jsonObject = new JSONObject(response.getBody());
@@ -537,8 +597,9 @@ public class UnitTest {
 
     @Test
     public void deleteEvent(){
-        Account account = accountService.save(new Account("user", "password"));
-        adminService.save(new Admin(account));
+        Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
+            add("ROLE_ADMIN");
+        }}));
         Reservable reservable = reservableService.save(new Seat("name"));
         Event event = eventService.save(new Event(reservable, "event"));
         reservationService.save(new Reservation(account, event, reservable));
@@ -649,9 +710,14 @@ public class UnitTest {
         Reservable reservable2 = reservableService.save(new Seat("name2", space1));
         Event event = eventService.save(new Event(space1, "event"));
         Reservation reservation = reservationService.save(new Reservation(account, event, reservable1));
-        reservation.setReservable(reservable2);
 
-        ResponseEntity<String> response = testMethods.setPass("user", "password").editReservation(reservation.getId(), reservation);
+        HashMap<String, Object> updateMap = new HashMap<>();
+
+        ObjectMapper mapper = new ConfiguredMapper();
+
+        updateMap.put("reservable", mapper.convertValue(reservable2, new TypeReference<HashMap<String, Object>>() {}));
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").editReservation(reservation.getId(), updateMap);
 
         Assert.assertEquals(200, response.getStatusCodeValue());
         Reservation reservationFromResponse = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Reservation.class);
@@ -666,11 +732,11 @@ public class UnitTest {
         Reservation reservation = reservationService.save(new Reservation(account, event, seat));
         UUID oldId = reservation.getId();
         UUID newId = UUID.randomUUID();
-        JSONObject reservationJson = new JSONObject(objectMapper.writeValueAsString(reservation));
-        reservationJson.put("id", newId);
-        reservation = objectMapper.readValue(reservationJson.toString(), Reservation.class);
 
-        ResponseEntity<String> response = testMethods.setPass("user", "password").editReservation(oldId, reservation);
+        HashMap<String, Object> updateMap = new HashMap<>();
+        updateMap.put("id", newId);
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").editReservation(oldId, updateMap);
 
         Assert.assertEquals(400, response.getStatusCodeValue());
         JSONObject jsonObject = new JSONObject(response.getBody());

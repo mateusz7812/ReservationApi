@@ -41,6 +41,8 @@ public abstract class Reservable{
     @JoinColumn(name = "space_id")
     private Space space;
 
+    public Reservable(){}
+
     public Reservable(String name, Space space){
         this.name = name;
         this.space = space;

@@ -1,10 +1,13 @@
 package com.example.reservationApi.reservable;
 
 import com.example.reservationApi.reservable.types.Space;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,16 +36,22 @@ public class ReservableController {
     }
 
     @PutMapping("/{id}")
-    public Reservable updateReservable(@PathVariable UUID id, @RequestBody Reservable reservable, HttpServletResponse response){
-        if(id.equals(reservable.getId()))
-            return reservableService.update(reservable);
-        else{
+    public Reservable updateReservable(@PathVariable UUID id, @RequestBody HashMap<String, Object> reservableMap, HttpServletResponse response){
+        if (reservableMap.containsKey("id")) {
             try {
                 response.sendError(400, "id is unchangable");
             } catch (IOException e) {
                 response.setStatus(400);
             }
             return null;
+        } else {
+            Reservable reservable = reservableService.findById(id);
+            ObjectMapper objectMapper = new ObjectMapper();
+            HashMap<String, Object> updatedMap = objectMapper.convertValue(reservable, new TypeReference<>() {
+            });
+            updatedMap.putAll(reservableMap);
+            Reservable updatedReservable = objectMapper.convertValue(updatedMap, Reservable.class);
+            return reservableService.update(updatedReservable);
         }
     }
 

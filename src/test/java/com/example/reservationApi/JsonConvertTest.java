@@ -2,7 +2,8 @@ package com.example.reservationApi;
 
 import com.example.reservationApi.account.Account;
 import com.example.reservationApi.account.AccountService;
-import com.example.reservationApi.admin.AdminService;
+import com.example.reservationApi.authentication.Token.Token;
+import com.example.reservationApi.authentication.Token.TokenService;
 import com.example.reservationApi.event.Event;
 import com.example.reservationApi.event.EventService;
 import com.example.reservationApi.reservable.Reservable;
@@ -13,27 +14,28 @@ import com.example.reservationApi.reservation.Reservation;
 import com.example.reservationApi.reservation.ReservationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class JsonConvertTest {
     ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
     AccountService accountService;
-
-    @Autowired
-    AdminService adminService;
 
     @Autowired
     EventService eventService;
@@ -44,23 +46,42 @@ public class JsonConvertTest {
     @Autowired
     private ReservableService reservableService;
 
+    @Autowired
+    private TokenService tokenService;
+
     @Test
-    public void accountJsonConverter() throws JsonProcessingException {
+    public void tokenJsonConverter() throws JsonProcessingException {
+        Account account = accountService.save(new Account("user", "password"));
+        Token token = tokenService.save(new Token("tokentokentoken", account));
+        String tokenAsString = objectMapper.writeValueAsString(token);
+
+        Token readedToken = objectMapper.readValue(tokenAsString, Token.class);
+        Assert.assertEquals(token.getToken(), readedToken.getToken());
+        Assert.assertEquals(token.getAccount().getId(), readedToken.getAccount().getId());
+    }
+
+    @Test
+    public void accountJsonConverter() throws JsonProcessingException, JSONException {
         Reservable reservable = reservableService.save(new Seat("seat1"));
         Event event = eventService.save(new Event(reservable, "event1"));
-        Account account1 = accountService.save(new Account("reservationTest", "password"));
-        Reservation reservation = reservationService.save(new Reservation(account1, event, reservable));
-        account1 = accountService.findById(account1.getId());
+        Account account = accountService.save(new Account("reservationTest", "password"));
+        Reservation reservation = reservationService.save(new Reservation(account, event, reservable));
+        account = accountService.findById(account.getId());
 
-        String account1JsonString = objectMapper.writeValueAsString(account1);
-        Account account1FromJson = objectMapper.readValue(account1JsonString, Account.class);
+        String accountJsonString = objectMapper.writeValueAsString(account);
 
-        Assert.assertEquals(account1.getId(), account1FromJson.getId());
-        Assert.assertEquals(account1.getLogin(), account1FromJson.getLogin());
-        Assert.assertNotNull(account1.getReservations());
-        Assert.assertEquals(1, account1FromJson.getReservations().size());
-        Assert.assertEquals(reservation.getId(), account1FromJson.getReservations().get(0).getId());
+        JSONObject jsonObject = new JSONObject(accountJsonString);
+        Assert.assertFalse(jsonObject.has("password"));
+        jsonObject.put("password", "password");
 
+        Account accountFromJson = objectMapper.readValue(jsonObject.toString(), Account.class);
+
+        Assert.assertEquals(account.getId(), accountFromJson.getId());
+        Assert.assertEquals(account.getLogin(), accountFromJson.getLogin());
+        Assert.assertEquals(account.getPassword(), accountFromJson.getPassword());
+        Assert.assertNotNull(account.getReservations());
+        Assert.assertEquals(1, accountFromJson.getReservations().size());
+        Assert.assertEquals(reservation.getId(), accountFromJson.getReservations().get(0).getId());
     }
 
     @Test
