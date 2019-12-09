@@ -3,6 +3,7 @@ package com.example.reservationApi.reservable.types;
 import com.example.reservationApi.json.ReservableDeserializer;
 import com.example.reservationApi.reservable.Reservable;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import javax.persistence.Entity;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@JsonTypeName("Space")
 @Table(name = "spaces")
 public class Space extends Reservable{
     @JsonDeserialize(using = ReservableDeserializer.class)

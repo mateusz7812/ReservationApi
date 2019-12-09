@@ -36,12 +36,10 @@ public class Account {
 
     @Fetch(FetchMode.SELECT)
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
-    private List<String> roles = List.of("ROLE_USER");
+    private List<String> roles;
 
     public Account(String login, String password, List<String> roles){
         this(login, password);
-        if(!roles.contains("ROLE_USER"))
-            roles.add("ROLE_USER");
         this.roles = roles;
     }
 
@@ -53,6 +51,7 @@ public class Account {
 
     public Account() {
         super();
+        this.roles = new ArrayList<>();
         this.reservations = new ArrayList<>();
     }
 

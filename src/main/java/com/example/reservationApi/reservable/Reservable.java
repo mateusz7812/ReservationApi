@@ -2,12 +2,10 @@ package com.example.reservationApi.reservable;
 
 import com.example.reservationApi.event.Event;
 import com.example.reservationApi.json.IdDeserializer;
+import com.example.reservationApi.reservable.types.Seat;
 import com.example.reservationApi.reservable.types.Space;
 import com.example.reservationApi.reservation.Reservation;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIdentityReference;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.*;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
@@ -19,7 +17,11 @@ import java.util.UUID;
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 @Table(name="reservable")
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "className")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = Space.class, name = "Space"),
+        @JsonSubTypes.Type(value = Seat.class, name = "Seat")
+})
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, resolver = IdDeserializer.class, property = "id", scope = Reservable.class)
 public abstract class Reservable{
     @Id @GeneratedValue protected UUID id;
