@@ -131,18 +131,6 @@ public class UnitTest {
     }
 
     @Test
-    public void getAccount() throws JsonProcessingException {
-        Account account = accountService.save(new Account("user", "password"));
-
-        ResponseEntity<String> response = testMethods.setPass("user", "password").getAccount(account.getId());
-
-        Assert.assertEquals(200, response.getStatusCodeValue());
-        Account actual = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Account.class);
-        Assert.assertEquals(account.getId(), actual.getId());
-        Assert.assertEquals(account.getLogin(), actual.getLogin());
-    }
-
-    @Test
     public void addAccountsWithSameLogin() throws JsonProcessingException, JSONException {
         testMethods.addAccount(new Account("login", "password"));
         Account accountAdded = accountService.findAll().get(0);
@@ -155,6 +143,27 @@ public class UnitTest {
         List<Account> all = accountService.findAll();
         Assert.assertEquals(1, all.size());
         Assert.assertEquals(accountAdded.getId(), all.get(0).getId());
+    }
+
+    @Test
+    public void getAccountById() throws JsonProcessingException {
+        Account account = accountService.save(new Account("user", "password"));
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").getAccountById(account.getId());
+
+        Assert.assertEquals(200, response.getStatusCodeValue());
+        Account actual = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Account.class);
+        Assert.assertEquals(account.getId(), actual.getId());
+        Assert.assertEquals(account.getLogin(), actual.getLogin());
+    }
+
+    @Test
+    public void getAccount404(){
+        accountService.save(new Account("user", "password"));
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").getAccountById(UUID.fromString("7c520301-7310-4e39-b36d-2f0f808ad38d"));
+
+        Assert.assertEquals(404, response.getStatusCodeValue());
     }
 
     @Test
@@ -263,6 +272,7 @@ public class UnitTest {
         Account account = accountService.save(new Account("user", "password", new ArrayList<>() {{
             add("ROLE_ADMIN");
         }}));
+        tokenService.save(new Token("token", account));
         Reservable reservable = reservableService.save(new Seat("seat1"));
         Event event = eventService.save(new Event(reservable, "Event1"));
         reservationService.save(new Reservation(account, event, reservable));
@@ -271,6 +281,7 @@ public class UnitTest {
 
         Assert.assertEquals(200, response.getStatusCodeValue());
         Assert.assertEquals(0, accountService.findAll().size());
+        Assert.assertNull(tokenService.getByToken("token"));
         Assert.assertEquals(0, reservationService.findAll().size());
         Assert.assertEquals(1, reservableService.findAll().size());
         Assert.assertEquals(1, eventService.findAll().size());
@@ -352,6 +363,15 @@ public class UnitTest {
         Assert.assertEquals(200, response.getStatusCodeValue());
         Reservable reservable = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Reservable.class);
         Assert.assertEquals("name", reservable.getName());
+    }
+
+    @Test
+    public void getReservable404(){
+        accountService.save(new Account("user", "password"));
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").getReservableById(UUID.fromString("7c520301-7310-4e39-b36d-2f0f808ad38d"));
+
+        Assert.assertEquals(404, response.getStatusCodeValue());
     }
 
     @Test
@@ -547,11 +567,20 @@ public class UnitTest {
         eventService.save(new Event(null, "event"));
         Event expected = eventService.findAll().get(0);
 
-        ResponseEntity<String> response = testMethods.setPass("user", "password").getEventWithId(expected.getId().toString());
+        ResponseEntity<String> response = testMethods.setPass("user", "password").getEventById(expected.getId());
 
         Assert.assertEquals(200, response.getStatusCodeValue());
         Event actual = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Event.class);
         Assert.assertEquals(expected.getName(), actual.getName());
+    }
+
+    @Test
+    public void getEvent404(){
+        accountService.save(new Account("user", "password"));
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").getEventById(UUID.fromString("7c520301-7310-4e39-b36d-2f0f808ad38d"));
+
+        Assert.assertEquals(404, response.getStatusCodeValue());
     }
 
     @Test
@@ -564,6 +593,7 @@ public class UnitTest {
 
         HashMap<String, Object> updateMap = new HashMap<>();
         updateMap.put("name", "other");
+        updateMap.put("id", event.getId());
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").editEvent(event.getId(), updateMap);
 
@@ -630,6 +660,24 @@ public class UnitTest {
     }
 
     @Test
+    public void addSeatInSpaceInOtherSpaceReservation() throws JsonProcessingException {
+        Account account = accountService.save(new Account("user", "password"));
+        Space space1 = (Space) reservableService.save(new Space("name"));
+        Space space2 = (Space) reservableService.save(new Space("name", space1));
+        Reservable reservable = reservableService.save(new Seat("name", space2));
+        Event event = eventService.save(new Event(space1, "event"));
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").addReservation(new Reservation(account, event, reservable));
+
+        Assert.assertEquals(200, response.getStatusCodeValue());
+        Reservation reservationFromResponse = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Reservation.class);
+        Reservation reservationFromRepository = reservationService.findById(reservationFromResponse.getId());
+        Assert.assertEquals(account.getId(), reservationFromRepository.getAccount().getId());
+        Assert.assertEquals(event.getId(), reservationFromRepository.getEvent().getId());
+        Assert.assertEquals(reservable.getId(), reservationFromRepository.getReservable().getId());
+    }
+
+    @Test
     public void addSeatBadEventReservation() throws JsonProcessingException, JSONException {
         Account account = accountService.save(new Account("user", "password"));
         Seat seat1 = (Seat) reservableService.save(new Seat("name1"));
@@ -672,10 +720,9 @@ public class UnitTest {
     public void addSpaceReservation() throws JsonProcessingException {
         Account account = accountService.save(new Account("user", "password"));
         Space space = (Space) reservableService.save(new Space("space1"));
-        Reservable reservable = reservableService.save(new Seat("name", space));
         Event event = eventService.save(new Event(space, "event"));
 
-        ResponseEntity<String> response = testMethods.setPass("user", "password").addReservation(new Reservation(account, event, reservable));
+        ResponseEntity<String> response = testMethods.setPass("user", "password").addReservation(new Reservation(account, event, space));
 
         Assert.assertEquals(200, response.getStatusCodeValue());
         Reservation reservationFromResponse = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Reservation.class);
@@ -701,6 +748,24 @@ public class UnitTest {
         Assert.assertEquals("reservable is taken", jsonObject.get("message"));
     }
 
+    @Test
+    public void getReservationById() throws JsonProcessingException {
+        Account account = accountService.save(new Account("user", "password"));
+        Space space1 = (Space) reservableService.save(new Space("space1"));
+        Reservable reservable1 = reservableService.save(new Seat("name1", space1));
+        Reservable reservable2 = reservableService.save(new Seat("name2", space1));
+        Event event = eventService.save(new Event(space1, "event"));
+        Reservation reservation = reservationService.save(new Reservation(account, event, reservable1));
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").getReservationById(reservation.getId());
+
+        Assert.assertEquals(200, response.getStatusCodeValue());
+        Reservation reservationFromResponse = objectMapper.readValue(Objects.requireNonNull(response.getBody()), Reservation.class);
+        Assert.assertEquals(reservation.getId(), reservationFromResponse.getId());
+        Assert.assertEquals(reservation.getEvent().getId(), reservationFromResponse.getEvent().getId());
+        Assert.assertEquals(reservation.getReservable().getId(), reservationFromResponse.getReservable().getId());
+        Assert.assertEquals(reservation.getAccount().getId(), reservationFromResponse.getAccount().getId());
+    }
 
     @Test
     public void editReservation() throws JsonProcessingException {
@@ -716,6 +781,7 @@ public class UnitTest {
         ObjectMapper mapper = new ConfiguredMapper();
 
         updateMap.put("reservable", mapper.convertValue(reservable2, new TypeReference<HashMap<String, Object>>() {}));
+        updateMap.put("id", reservation.getId());
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").editReservation(reservation.getId(), updateMap);
 

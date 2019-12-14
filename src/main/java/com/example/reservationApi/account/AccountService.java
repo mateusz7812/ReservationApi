@@ -29,7 +29,7 @@ public class AccountService {
     }
 
     public Account findById(UUID id) {
-        return accountRepository.findById(id).orElseThrow();
+        return accountRepository.findById(id).orElse(null);
     }
 
     public boolean checkPassword(String login, String password) {

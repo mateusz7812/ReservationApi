@@ -47,8 +47,15 @@ public class AccountController {
     }
 
     @GetMapping("/{id}")
-    public Account getAccountWithId(@PathVariable UUID id) {
-        return accountService.findById(id);
+    public Account getAccountWithId(@PathVariable UUID id, HttpServletResponse response) {
+        Account account = accountService.findById(id);
+        if(account != null){
+            return account;
+        }
+        else{
+            response.setStatus(404);
+            return null;
+        }
     }
 
     @PutMapping("/{id}")

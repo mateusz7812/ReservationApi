@@ -36,7 +36,7 @@ public class Space extends Reservable{
 
     @Override
     public boolean contains(Reservable reservable) {
-        return getReservables().stream().filter(reservable1 -> reservable1.getId().equals(reservable.getId())).toArray().length != 0;
+        return getId().equals(reservable.getId()) || getReservables().stream().filter(reservable1 -> reservable1.contains(reservable)).toArray().length != 0;
     }
 
     public List<Reservable> getReservables(){

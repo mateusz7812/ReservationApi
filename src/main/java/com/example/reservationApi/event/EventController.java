@@ -42,14 +42,21 @@ public class EventController {
     }
 
     @GetMapping("/{id}")
-    public Event getEventWithId(@PathVariable UUID id){
-        return eventService.findById(id);
+    public Event getEventWithId(@PathVariable UUID id, HttpServletResponse response){
+        Event event = eventService.findById(id);
+        if(event != null){
+            return event;
+        }
+        else{
+            response.setStatus(404);
+            return null;
+        }
     }
 
     @PutMapping("/{id}")
     public Event editEventWithId(@PathVariable UUID id, @RequestBody HashMap<String, Object> updateMap, HttpServletResponse response){
 
-        if (updateMap.containsKey("id")) {
+        if (updateMap.containsKey("id") && !(UUID.fromString((String) updateMap.get("id")).equals(id))) {
             try {
                 response.sendError(400, "id is unchangable");
             } catch (IOException e) {

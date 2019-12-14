@@ -16,7 +16,7 @@ public class ReservableService {
     }
 
     public Reservable findById(UUID id) {
-        return reservableRepository.findById(id).orElseThrow();
+        return reservableRepository.findById(id).orElse(null);
     }
 
     public List<Reservable> findAll() {

@@ -1,5 +1,6 @@
 package com.example.reservationApi.account;
 
+import com.example.reservationApi.authentication.Token.Token;
 import com.example.reservationApi.json.IdDeserializer;
 import com.example.reservationApi.reservation.Reservation;
 import com.fasterxml.jackson.annotation.*;
@@ -37,6 +38,9 @@ public class Account {
     @Fetch(FetchMode.SELECT)
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     private List<String> roles;
+
+    @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE)
+    private List<Token> tokens;
 
     public Account(String login, String password, List<String> roles){
         this(login, password);

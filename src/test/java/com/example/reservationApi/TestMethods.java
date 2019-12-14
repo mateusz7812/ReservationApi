@@ -49,7 +49,7 @@ class TestMethods {
         return testRestTemplate.withBasicAuth(username, password).exchange("/api/account/" + id, HttpMethod.PUT, accountAddRequest, String.class);
     }
 
-    ResponseEntity<String> getAccount(UUID id) {
+    ResponseEntity<String> getAccountById(UUID id) {
         return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/account/" + id, String.class);
     }
 
@@ -85,7 +85,7 @@ class TestMethods {
         return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/event", String.class);
     }
 
-    ResponseEntity<String> getEventWithId(String eventId) {
+    ResponseEntity<String> getEventById(UUID eventId) {
         return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/event/" + eventId, String.class);
     }
 
@@ -101,10 +101,13 @@ class TestMethods {
         return testRestTemplate.withBasicAuth(username, password).postForEntity("/api/reservation", addReservationRequest, String.class);
     }
 
-    public ResponseEntity<String> deleteReservation(UUID id) {
-        return testRestTemplate.withBasicAuth(username, password).exchange("/api/reservation/" + id,HttpMethod.DELETE, null, String.class);
+    public ResponseEntity<String> getReservationById(UUID id) {
+        return testRestTemplate.withBasicAuth(username, password).exchange("/api/reservation/" + id, HttpMethod.GET, null, String.class);
     }
 
+    public ResponseEntity<String> deleteReservation(UUID id) {
+        return testRestTemplate.withBasicAuth(username, password).exchange("/api/reservation/" + id, HttpMethod.DELETE, null, String.class);
+    }
 
     public ResponseEntity<String> deleteReservable(UUID id) {
         return testRestTemplate.withBasicAuth(username, password).exchange("/api/reservable/" + id, HttpMethod.DELETE, null, String.class);

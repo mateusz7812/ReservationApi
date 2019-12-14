@@ -63,7 +63,7 @@ class FunctionalTest {
 		testMethods.setPass("user", "password").addReservation(new Reservation(account, event, seat));
 
 		//check reservation
-		ResponseEntity<String> getAccountResponse = testMethods.getAccount(account.getId());
+		ResponseEntity<String> getAccountResponse = testMethods.getAccountById(account.getId());
 		account = mapper.readValue(Objects.requireNonNull(getAccountResponse.getBody()), Account.class);
 		List<Reservation> reservations = account.getReservations();
 		Assert.assertEquals(1, reservations.size());
@@ -137,33 +137,40 @@ class FunctionalTest {
 
 		//add events
 		ResponseEntity<String> addEvent1Response = testMethods.setPass("admin", "admin").addEvent(new Event(space1, "event1", 1200, 1450));
+		Assert.assertEquals(200, addEvent1Response.getStatusCodeValue());
 		Event event1 = mapper.readValue(Objects.requireNonNull(addEvent1Response.getBody()), Event.class);
 
 		ResponseEntity<String> addEvent2Response = testMethods.addEvent(new Event(space2, "event2", 1300, 1400));
+		Assert.assertEquals(200, addEvent2Response.getStatusCodeValue());
 		Event event2 = mapper.readValue(Objects.requireNonNull(addEvent2Response.getBody()), Event.class);
 
 		ResponseEntity<String> addEvent3Response = testMethods.addEvent(new Event(space4, "event3", 1500, 1800));
+		Assert.assertEquals(200, addEvent3Response.getStatusCodeValue());
 		Event event3 = mapper.readValue(Objects.requireNonNull(addEvent3Response.getBody()), Event.class);
 
 		//add reservation
-		Reservation reservation1 = new Reservation(user1, event3, reservables.get(7));
-		testMethods.setPass("user1", "password").addReservation(reservation1);
+		Reservation reservation1 = new Reservation(user1, event3, reservables.stream().filter((Reservable reservable) -> reservable.getName().equals("seat8")).findFirst().orElseThrow());
+		ResponseEntity<String> addReservation1Response = testMethods.setPass("user1", "password").addReservation(reservation1);
+		Assert.assertEquals(200, addReservation1Response.getStatusCodeValue());
 
-		Reservation reservation2 = new Reservation(user1, event3, reservables.get(12));
-		testMethods.addReservation(reservation2);
+		Reservation reservation2 = new Reservation(user1, event1, reservables.stream().filter((Reservable reservable) -> reservable.getName().equals("seat5")).findFirst().orElseThrow());
+		ResponseEntity<String> addReservation2Response = testMethods.addReservation(reservation2);
+		Assert.assertEquals(200, addReservation2Response.getStatusCodeValue());
 
-		Reservation reservation3 = new Reservation(user2, event1, reservables.get(10));
-		testMethods.setPass("user2", "other").addReservation(reservation3);
+		Reservation reservation3 = new Reservation(user2, event1, reservables.stream().filter((Reservable reservable) -> reservable.getName().equals("seat8")).findFirst().orElseThrow());
+		ResponseEntity<String> addReservation3Response = testMethods.setPass("user2", "other").addReservation(reservation3);
+		Assert.assertEquals(200, addReservation3Response.getStatusCodeValue());
 
 		Reservation reservation4 = new Reservation(user2, event2, space2);
-		testMethods.addReservation(reservation4);
+		ResponseEntity<String> addReservation4Response = testMethods.addReservation(reservation4);
+		Assert.assertEquals(200, addReservation4Response.getStatusCodeValue());
 
 		//delete reservation
 		testMethods.deleteReservation(reservation3.getId());
 
 		//edit reservation
 		HashMap<String, Object> updateReservationMap = new HashMap<>();
-		updateReservationMap.put("reservable", reservables.get(8).getId());
+		updateReservationMap.put("reservable", (reservables.stream().filter((Reservable reservable) -> reservable.getName().equals("seat9")).findFirst().orElseThrow()).getId());
 		testMethods.setPass("user1", "password").editReservation(reservation1.getId(), updateReservationMap);
 
 		//delete reservations

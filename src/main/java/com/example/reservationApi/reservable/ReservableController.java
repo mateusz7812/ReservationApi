@@ -26,8 +26,15 @@ public class ReservableController {
     }
 
     @GetMapping("/{id}")
-    public Reservable getReservableById(@PathVariable UUID id){
-        return reservableService.findById(id);
+    public Reservable getReservableById(@PathVariable UUID id, HttpServletResponse response){
+        Reservable reservable = reservableService.findById(id);
+        if(reservable != null){
+            return reservable;
+        }
+        else{
+            response.setStatus(404);
+            return null;
+        }
     }
 
     @PostMapping
