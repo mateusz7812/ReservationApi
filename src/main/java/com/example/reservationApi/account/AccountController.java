@@ -27,7 +27,11 @@ public class AccountController {
     @GetMapping
     public List<Account> allAccounts(@PathParam("login") String login){
         if (login != null){
-            return Collections.singletonList(accountService.findByLogin(login));
+            Account byLogin = accountService.findByLogin(login);
+            if(byLogin != null){
+                return Collections.singletonList(byLogin);
+            }
+            return List.of();
         }
         return accountService.findAll();
     }

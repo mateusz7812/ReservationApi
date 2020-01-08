@@ -141,4 +141,8 @@ class TestMethods {
     public ResponseEntity<String> generateToken() {
         return testRestTemplate.withBasicAuth(username, password).getForEntity("/authenticate", String.class);
     }
+
+    public ResponseEntity<String> getAllReservations() {
+        return testRestTemplate.withBasicAuth(username, password).getForEntity("/api/reservation", String.class);
+    }
 }

@@ -201,6 +201,20 @@ public class UnitTest {
     }
 
     @Test
+    public void getAccountsByLoginNotFoundAny() throws Exception {
+        accountService.save(new Account("login2", "password"));
+
+        Map<String, String> filters = new HashMap<>();
+        filters.put("login", "login3");
+        ResponseEntity<String> response = testMethods.setPass("login2", "password").getAllAccountsFiltered(filters);
+
+        Assert.assertEquals(200, response.getStatusCodeValue());
+        List<Account> accounts = objectMapper.readValue(Objects.requireNonNull(response.getBody()), new TypeReference<>() {
+        });
+        Assert.assertEquals(0, accounts.size());
+    }
+
+    @Test
     public void editAccount() throws JsonProcessingException {
         Account account = accountService.save(new Account("user", "password"));
         HashMap<String, Object> accountMap = new HashMap<>();
@@ -765,6 +779,22 @@ public class UnitTest {
         Assert.assertEquals(reservation.getEvent().getId(), reservationFromResponse.getEvent().getId());
         Assert.assertEquals(reservation.getReservable().getId(), reservationFromResponse.getReservable().getId());
         Assert.assertEquals(reservation.getAccount().getId(), reservationFromResponse.getAccount().getId());
+    }
+
+    @Test
+    public void getAllReservations() throws JsonProcessingException {
+        Account account = accountService.save(new Account("user", "password"));
+        Space space1 = (Space) reservableService.save(new Space("space1"));
+        Reservable reservable1 = reservableService.save(new Seat("name1", space1));
+        Event event = eventService.save(new Event(space1, "event"));
+        Reservation reservation = reservationService.save(new Reservation(account, event, reservable1));
+
+        ResponseEntity<String> response = testMethods.setPass("user", "password").getAllReservations();
+
+        Assert.assertEquals(200, response.getStatusCodeValue());
+        List<Reservation> reservationsFromResponse = objectMapper.readValue(Objects.requireNonNull(response.getBody()), new TypeReference<>(){});
+        Reservation reservationFromResponse = reservationsFromResponse.get(0);
+        Assert.assertEquals(reservation.getId(), reservationFromResponse.getId());
     }
 
     @Test

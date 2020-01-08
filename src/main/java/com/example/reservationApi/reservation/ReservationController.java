@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -45,6 +46,11 @@ public class ReservationController {
             return true;
         }
         return false;
+    }
+
+    @GetMapping
+    public List<Reservation> getAllReservations(){
+        return reservationService.findAll();
     }
 
     @GetMapping("/{id}")
