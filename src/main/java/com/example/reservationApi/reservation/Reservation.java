@@ -4,16 +4,15 @@ import com.example.reservationApi.account.Account;
 import com.example.reservationApi.event.Event;
 import com.example.reservationApi.json.IdDeserializer;
 import com.example.reservationApi.json.ReservableDeserializer;
-import com.example.reservationApi.json.ReservableSerializer;
 import com.example.reservationApi.observation.ObservationService;
 import com.example.reservationApi.reservable.Reservable;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import javax.persistence.*;
 import java.util.UUID;
@@ -27,19 +26,28 @@ public class Reservation {
     @GeneratedValue
     private UUID id;
 
-    @JsonIdentityReference(alwaysAsId = true) @ManyToOne @JoinColumn(name = "account_id") private Account account;
+    @JsonIdentityReference(alwaysAsId = true)
+    @ManyToOne
+    @JoinColumn(name = "account_id")
+    private Account account;
 
-    @JsonIdentityReference(alwaysAsId = true) @ManyToOne @JoinColumn(name = "event_id") private Event event;
+    @JsonIdentityReference(alwaysAsId = true)
+    @ManyToOne
+    @JoinColumn(name = "event_id")
+    private Event event;
 
-    @JsonSerialize(using = ReservableSerializer.class)
     @JsonDeserialize(using = ReservableDeserializer.class)
-    @JsonIdentityReference(alwaysAsId = true) @ManyToOne @JoinColumn(name = "reservable_id") private Reservable reservable;
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
+    @JsonIdentityReference(alwaysAsId = true)
+    @ManyToOne
+    @JoinColumn(name = "reservable_id")
+    private Reservable reservable;
 
-    public Reservation(){
+    public Reservation() {
         super();
     }
 
-    public Reservation(Account account, Event event, Reservable reservable){
+    public Reservation(Account account, Event event, Reservable reservable) {
         super();
         this.event = event;
         this.reservable = reservable;

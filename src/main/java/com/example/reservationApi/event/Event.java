@@ -2,14 +2,13 @@ package com.example.reservationApi.event;
 
 import com.example.reservationApi.json.IdDeserializer;
 import com.example.reservationApi.json.ReservableDeserializer;
-import com.example.reservationApi.json.ReservableSerializer;
 import com.example.reservationApi.reservable.Reservable;
 import com.example.reservationApi.reservation.Reservation;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.springframework.lang.NonNull;
@@ -38,8 +37,9 @@ public class Event{
     private long endDate;
 
     @Fetch(FetchMode.SELECT)
-    @JsonSerialize(using = ReservableSerializer.class)
     @JsonDeserialize(using = ReservableDeserializer.class)
+    @JsonTypeInfo( use = JsonTypeInfo.Id.NONE)
+    @JsonIdentityReference(alwaysAsId = true)
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "reservable_id")
     private Reservable reservable;

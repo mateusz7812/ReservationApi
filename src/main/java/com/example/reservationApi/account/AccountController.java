@@ -1,7 +1,5 @@
 package com.example.reservationApi.account;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -73,7 +71,7 @@ public class AccountController {
             }
             return null;
         }
-        if (updateMap.containsKey("id")) {
+        if (updateMap.containsKey("id") && !(UUID.fromString((String) updateMap.get("id")).equals(id))) {
             try {
                 response.sendError(400, "id is unchangable");
             } catch (IOException e) {
@@ -82,14 +80,25 @@ public class AccountController {
             return null;
         }
         Account account = accountService.findById(id);
+        /*
         ObjectMapper mapper = new ObjectMapper();
         HashMap<String, Object> accountMap = mapper.convertValue(account, new TypeReference<>() {
         });
         accountMap.put("password", account.getPassword());
         accountMap.putAll(updateMap);
-        Account updatedAccount = mapper.convertValue(accountMap, Account.class);
-        return accountService.update(updatedAccount);
+        mapper.convertValue(accountMap, Account.class);
+        */
+        assignValues(account, updateMap);
+        return accountService.update(account);
+    }
 
+    static void assignValues(Account account, HashMap<String, Object> updateMap){
+        if(updateMap.containsKey("password")){
+            account.setPassword(String.valueOf(updateMap.get("password")));
+        }
+        if(updateMap.containsKey("login")){
+            account.setLogin(String.valueOf(updateMap.get("login")));
+        }
     }
 
     @DeleteMapping("/{id}")

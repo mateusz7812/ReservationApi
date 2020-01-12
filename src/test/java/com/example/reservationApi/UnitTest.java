@@ -220,6 +220,7 @@ public class UnitTest {
         HashMap<String, Object> accountMap = new HashMap<>();
         accountMap.put("login","newLogin");
         accountMap.put("password","newPassword");
+        accountMap.put("id", account.getId());
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").editAccount(account.getId(), accountMap);
 
@@ -810,7 +811,7 @@ public class UnitTest {
 
         ObjectMapper mapper = new ConfiguredMapper();
 
-        updateMap.put("reservable", mapper.convertValue(reservable2, new TypeReference<HashMap<String, Object>>() {}));
+        updateMap.put("reservable", reservable2.getId());
         updateMap.put("id", reservation.getId());
 
         ResponseEntity<String> response = testMethods.setPass("user", "password").editReservation(reservation.getId(), updateMap);

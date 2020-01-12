@@ -7,7 +7,6 @@ public class ConfiguredMapper extends com.fasterxml.jackson.databind.ObjectMappe
     public ConfiguredMapper(){
         super();
         SimpleModule module = new SimpleModule();
-        module.addSerializer(Reservable.class, new ReservableSerializer());
         module.addDeserializer(Reservable.class, new ReservableDeserializer());
         this.registerModule(module);
     }

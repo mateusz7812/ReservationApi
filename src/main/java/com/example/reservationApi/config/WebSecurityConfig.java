@@ -36,7 +36,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests()
                 .mvcMatchers(HttpMethod.POST,"/api/account/**").permitAll()
                 .mvcMatchers(HttpMethod.DELETE,"/api/account/**").hasRole("ADMIN")
-                .mvcMatchers("/api/admin/**").hasRole("ADMIN")
                 .mvcMatchers(HttpMethod.GET, "/api/event/**").authenticated()
                 .mvcMatchers("/api/event/**").hasRole("ADMIN")
                 .mvcMatchers(HttpMethod.GET, "/api/reservable/**").authenticated()
