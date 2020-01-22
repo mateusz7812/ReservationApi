@@ -2,6 +2,8 @@ package com.example.reservationApi;
 
 import com.example.reservationApi.account.Account;
 import com.example.reservationApi.account.AccountRepository;
+import com.example.reservationApi.authentication.Token.Token;
+import com.example.reservationApi.authentication.Token.TokenRepository;
 import com.example.reservationApi.event.Event;
 import com.example.reservationApi.event.EventRepository;
 import com.example.reservationApi.reservable.Reservable;
@@ -24,7 +26,6 @@ import org.springframework.web.socket.*;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 
 import java.net.URI;
-import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -54,33 +55,11 @@ public class SocketTests {
     @Autowired
     ReservationRepository reservationRepository;
 
+    @Autowired
+    TokenRepository tokenRepository;
+
     private CompletableFuture<Reservable> completableFuture;
 
-    @Before
-    public void setup() {
-        completableFuture = new CompletableFuture<>();
-        URL = "ws://localhost:" + port + "/observe/";
-    }
-
-    @Test
-    public void testCreateConnection() throws InterruptedException, ExecutionException, TimeoutException {
-        Account account = accountRepository.save(new Account("login", "password"));
-        Reservable reservable = reservableRepository.save(new Seat("seat1"));
-        Event event = eventRepository.save(new Event(reservable, "event1"));
-        String uuid = String.valueOf(event.getId());
-        StandardWebSocketClient client = new StandardWebSocketClient();
-        String plainCredentials="login" + ":" + "password";
-        String base64Credentials = Base64.getEncoder().encodeToString(plainCredentials.getBytes());
-        WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
-        headers.add("Authorization", "Basic " + base64Credentials);
-        client.doHandshake(new TestWebSocketHandler(), headers, URI.create(URL + uuid)).get(10, SECONDS);
-        Reservation reservation = reservationRepository.save(new Reservation(account, event, reservable));
-
-        Reservable reservableFromWebSocket = completableFuture.get(10, SECONDS);
-
-        Assert.assertEquals(reservable.getId(), reservableFromWebSocket.getId());
-        Assert.assertEquals(reservation.getReservable().getId(), reservableFromWebSocket.getId());
-    }
 
     class TestWebSocketHandler implements WebSocketHandler{
         @Override
@@ -104,4 +83,56 @@ public class SocketTests {
             return false;
         }
     }
+
+
+    @Before
+    public void setup() {
+        completableFuture = new CompletableFuture<>();
+        URL = "ws://localhost:" + port + "/observe/";
+    }
+
+    @Test
+    public void testCreateConnection() throws InterruptedException, ExecutionException, TimeoutException {
+        Account account = accountRepository.save(new Account("login", "password"));
+        Reservable reservable = reservableRepository.save(new Seat("seat1"));
+        Event event = eventRepository.save(new Event(reservable, "event1"));
+        String uuid = String.valueOf(event.getId());
+
+        StandardWebSocketClient client = new StandardWebSocketClient();
+        //String plainCredentials="login" + ":" + "password";
+        //String base64Credentials = Base64.getEncoder().encodeToString(plainCredentials.getBytes());
+        WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
+        //headers.add("Authorization", "Basic " + base64Credentials);
+        headers.setBasicAuth(account.getLogin(), account.getPassword());
+        client.doHandshake(new TestWebSocketHandler(), headers, URI.create(URL + uuid)).get(10, SECONDS);
+
+        Reservation reservation = reservationRepository.save(new Reservation(account, event, reservable));
+
+        Reservable reservableFromWebSocket = completableFuture.get(10, SECONDS);
+
+        Assert.assertEquals(reservable.getId(), reservableFromWebSocket.getId());
+        Assert.assertEquals(reservation.getReservable().getId(), reservableFromWebSocket.getId());
+    }
+
+    @Test
+    public void testCreateConnectionWithToken() throws InterruptedException, ExecutionException, TimeoutException {
+        Account account = accountRepository.save(new Account("login", "password"));
+        Reservable reservable = reservableRepository.save(new Seat("seat1"));
+        Event event = eventRepository.save(new Event(reservable, "event1"));
+        String uuid = String.valueOf(event.getId());
+        Token token = tokenRepository.save(new Token("token.token.token.tok", account));
+
+        StandardWebSocketClient client = new StandardWebSocketClient();
+        WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
+        headers.setBearerAuth(token.getToken());
+        client.doHandshake(new TestWebSocketHandler(), headers, URI.create(URL + uuid)).get(10, SECONDS);
+
+        Reservation reservation = reservationRepository.save(new Reservation(account, event, reservable));
+
+        Reservable reservableFromWebSocket = completableFuture.get(10, SECONDS);
+
+        Assert.assertEquals(reservable.getId(), reservableFromWebSocket.getId());
+        Assert.assertEquals(reservation.getReservable().getId(), reservableFromWebSocket.getId());
+    }
+
 }
